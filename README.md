@@ -25,18 +25,18 @@ MyCucTime = partial(time.CucTime, 4, 2, has_preamble=False)
 
 with open('telemetry.dump', 'rb') as f:
     content = f.read()
-data = memoryview(content)
+    data = memoryview(content)
 
-offset = 0
-cuc_time = RamsesCucTime()
-while offset < len(data):
-    packet_length, packet = RamsesTmPacket(data[offset:],
+    offset = 0
+    cuc_time = MyCucTime()
+    while offset < len(data):
+        packet_length, packet = MyTmPacket(data[offset:],
                                            cuc_time,
                                            validate_fields=False,
                                            validate_pec=False)
-    offset += packet_length
-    if packet.service == 3 and packet.subservice == 25:
-        print(packet)
+        offset += packet_length
+        if packet.service == 3 and packet.subservice == 25:
+            print(packet)
 ```
 
 ## Supported Features
