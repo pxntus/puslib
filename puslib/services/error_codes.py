@@ -14,3 +14,6 @@ class CommonErrorCode(bytes, Enum):
     ILLEGAL_PACKET_TYPE = (3, "Illegal packet type")
     ILLEGAL_PACKET_SUBTYPE = (4, "Illegal packet subtype")
     ILLEGAL_APP_DATA = (5, "Illegal or inconsistent application data")
+
+    PUS8_INVALID_FID = (80, "Invalid function ID")
+    PUS8_FUNCTION_NOT_IMPLEMENTED = (81, "Function not implemented")

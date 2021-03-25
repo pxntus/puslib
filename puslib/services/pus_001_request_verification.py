@@ -2,7 +2,6 @@ import struct
 from enum import IntEnum
 from datetime import datetime
 
-#from . import PusServiceType
 from .service import PusService
 
 _STRUCT_UINT8 = struct.Struct('B')
@@ -21,7 +20,6 @@ class _SubService(IntEnum):
 
 class RequestVerification(PusService):
     def __init__(self, tm_distributor):
-        #super().__init__(self, PusServiceType.REQUEST_VERIFICATION, tm_distributor=tm_distributor)
         super().__init__(self, 1, tm_distributor=tm_distributor)
 
     def enqueue(self, tc_packet):

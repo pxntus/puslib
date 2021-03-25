@@ -1,3 +1,4 @@
+import struct
 from functools import partial
 from dataclasses import dataclass
 
@@ -13,3 +14,6 @@ class PusPolicy:
     deserialize_tc_packet: partial = partial(PusTcPacket.deserialize)
     create_tm_packet: partial = partial(PusTmPacket.create)
     deserialize_tm_packet: partial = partial(PusTmPacket.deserialize)
+
+    # PUS 8: Function Management
+    function_id_type: struct.Struct = struct.Struct('>H')

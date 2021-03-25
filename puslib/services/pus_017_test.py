@@ -1,6 +1,5 @@
 from datetime import datetime
 
-#from . import PusServiceType
 from .service import PusService
 
 
