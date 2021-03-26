@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 
-from puslib.cuctime import CucTime, TimeCodeIdentification, TAI_EPOCH
+from puslib.time import CucTime, TimeCodeIdentification, TAI_EPOCH
 from puslib.exceptions import InvalidTimeFormat
 
 
