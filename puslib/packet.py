@@ -75,6 +75,10 @@ class CcsdsSpacePacket:
     def apid(self):
         return self.header.apid
 
+    @property
+    def has_pec(self):
+        return self._has_pec
+
     def serialize(self, buffer):
         if len(buffer) < self.header.data_length + 1:
             raise TooSmallBufferException()
@@ -104,8 +108,8 @@ class CcsdsSpacePacket:
         return packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length
 
     @classmethod
-    def create(cls, has_pec=True, **kwargs):
-        packet = cls(has_pec)
+    def create(cls, **kwargs):
+        packet = cls(kwargs.get('has_pec', True))
 
         packet_version_number = kwargs.get('packet_version_number', CCSDS_PACKET_VERSION_NUMBER)
         _validate_int_field('Packet version number', packet_version_number, 0, 0)
@@ -113,6 +117,7 @@ class CcsdsSpacePacket:
 
         packet_type = kwargs.get('packet_type', None)
         if not isinstance(packet_type, PacketType):
+            print(type(kwargs))
             raise TypeError("Packet type must be a PacketType")
         packet.header.packet_type = packet_type
 
@@ -139,7 +144,7 @@ class CcsdsSpacePacket:
             raise TypeError("Application data must be None or a bytearray")
 
         data_length = kwargs.get('data_length', None)
-        data_size_except_source_data = kwargs.get('secondary_header_length', 0) + (2 if has_pec else 0)
+        data_size_except_source_data = kwargs.get('secondary_header_length', 0) + (2 if packet.has_pec else 0)
         max_data_size = CCSDS_MAX_PACKET_SIZE - _CCSDS_HDR_STRUCT.size - data_size_except_source_data
         if data_length:
             min_data_size = data_size_except_source_data
@@ -225,11 +230,11 @@ class PusTcPacket(CcsdsSpacePacket):
 
         # User data field
         if self.payload:
-            app_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.source else 0) - (2 if self._has_pec else 0)
+            app_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.source else 0) - (2 if self.has_pec else 0)
             buffer[offset:offset + app_data_length] = self.payload
 
         # Packet error control
-        if self._has_pec:
+        if self.has_pec:
             offset += app_data_length if self.payload else 0
             pec = crc_ccitt_calculate(buffer[0:offset])
             _UINT16_STRUCT.pack_into(buffer, offset, pec)
@@ -303,7 +308,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet_length, packet
 
     @classmethod
-    def create(cls, has_pec=True, **kwargs):
+    def create(cls, **kwargs):
         source = kwargs.get('source', None)
 
         if kwargs.get('secondary_header_flag'):
@@ -311,7 +316,7 @@ class PusTcPacket(CcsdsSpacePacket):
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TC
         kwargs['seq_count_or_name'] = kwargs.get('name', None)
-        packet = super(cls, cls).create(has_pec, **kwargs)
+        packet = super(cls, cls).create(**kwargs)
 
         pus_version = kwargs.get('pus_version', TC_PACKET_PUS_VERSION_NUMBER)
         if pus_version:
@@ -418,11 +423,11 @@ class PusTmPacket(CcsdsSpacePacket):
 
         # User data field
         if self.payload:
-            source_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.msg_type_counter else 0) - (2 if self.secondary_header.destination else 0) - len(self.secondary_header.time) - (2 if self._has_pec else 0)
+            source_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.msg_type_counter else 0) - (2 if self.secondary_header.destination else 0) - len(self.secondary_header.time) - (2 if self.has_pec else 0)
             buffer[offset:offset + source_data_length] = self.payload
 
         # Packet error control
-        if self._has_pec:
+        if self.has_pec:
             offset += source_data_length if self.payload else 0
             pec = crc_ccitt_calculate(buffer[0:offset])
             _UINT16_STRUCT.pack_into(buffer, offset, pec)
@@ -516,7 +521,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return packet_length, packet
 
     @classmethod
-    def create(cls, has_pec=True, **kwargs):
+    def create(cls, **kwargs):
         msg_type_counter = kwargs.get('msg_type_counter', None)
         destination = kwargs.get('destination', None)
         time = kwargs.get('time')
@@ -526,7 +531,7 @@ class PusTmPacket(CcsdsSpacePacket):
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TM
         kwargs['seq_count_or_name'] = kwargs.get('seq_count', None)
-        packet = super(cls, cls).create(has_pec, **kwargs)
+        packet = super(cls, cls).create(**kwargs)
 
         pus_version = kwargs.get('pus_version', TM_PACKET_PUS_VERSION_NUMBER)
         if pus_version:
