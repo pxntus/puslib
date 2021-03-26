@@ -58,6 +58,9 @@ class CcsdsSpacePacket:
         self.payload = None
         self._has_pec = has_pec
 
+    def __len__(self):
+        return _CCSDS_HDR_STRUCT.size + (len(self.payload) if self.payload else 0) + (2 if self._has_pec else 0)
+
     def __str__(self):
         s = f"{self.header.packet_type.name} Packet\n"
         s += f"  APID: {self.header.apid}\n"
@@ -173,6 +176,14 @@ class PusTcPacket(CcsdsSpacePacket):
     def __init__(self, has_pec=True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTc()
+
+    def __len__(self):
+        size = super().__len__()
+        if self.header.secondary_header_flag:
+            size += _COMMON_SEC_HDR_STRUCT.size
+            if self.secondary_header.source:
+                size += _UINT16_STRUCT.size
+        return size
 
     @property
     def name(self):
@@ -344,6 +355,16 @@ class PusTmPacket(CcsdsSpacePacket):
     def __init__(self, has_pec=True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTm()
+
+    def __len__(self):
+        size = super().__len__()
+        if self.header.secondary_header_flag:
+            size += _COMMON_SEC_HDR_STRUCT.size
+            if self.secondary_header.msg_type_counter:
+                size += _UINT16_STRUCT.size
+            if self.secondary_header.destination:
+                size += _UINT16_STRUCT.size
+        return size
 
     @property
     def seq_count(self):
