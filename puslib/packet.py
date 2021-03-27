@@ -86,6 +86,7 @@ class CcsdsSpacePacket:
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
         _CCSDS_HDR_STRUCT.pack_into(buffer, 0, packet_id, seq_ctrl, self.header.data_length)
+        return _CCSDS_HDR_STRUCT.size
 
     @classmethod
     def deserialize(cls, buffer, has_pec=True, validate_pec=True):
@@ -117,7 +118,6 @@ class CcsdsSpacePacket:
 
         packet_type = kwargs.get('packet_type', None)
         if not isinstance(packet_type, PacketType):
-            print(type(kwargs))
             raise TypeError("Packet type must be a PacketType")
         packet.header.packet_type = packet_type
 
@@ -155,7 +155,9 @@ class CcsdsSpacePacket:
             data_length = data_size_except_source_data + (len(packet.payload) if packet.payload else 0)
             if data_length > max_data_size:
                 raise ValueError("Application data too large")
-        packet.header.data_length = data_length - 1
+            if data_length > 0:
+                data_length -= 1
+        packet.header.data_length = data_length
 
         return packet
 
@@ -214,8 +216,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return self.payload
 
     def serialize(self, buffer):
-        super().serialize(buffer)
-        offset = _CCSDS_HDR_STRUCT.size
+        offset = super().serialize(buffer)
 
         # First static part of secondary header
         tmp = self.secondary_header.pus_version << 4 | self.secondary_header.ack_flags
@@ -232,12 +233,15 @@ class PusTcPacket(CcsdsSpacePacket):
         if self.payload:
             app_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.source else 0) - (2 if self.has_pec else 0)
             buffer[offset:offset + app_data_length] = self.payload
+            offset += app_data_length
 
         # Packet error control
         if self.has_pec:
-            offset += app_data_length if self.payload else 0
             pec = crc_ccitt_calculate(buffer[0:offset])
             _UINT16_STRUCT.pack_into(buffer, offset, pec)
+            offset += _UINT16_STRUCT.size
+
+        return offset
 
     @classmethod
     def deserialize(cls, buffer, has_source_field=True, has_pec=True, validate_fields=True, validate_pec=True):
@@ -257,7 +261,7 @@ class PusTcPacket(CcsdsSpacePacket):
 
             # Last "optional" part of secondary header
             if has_source_field:
-                source = _UINT16_STRUCT.unpack_from(buffer, offset)
+                source, = _UINT16_STRUCT.unpack_from(buffer, offset)
                 offset += _UINT16_STRUCT.size
             else:
                 source = None
@@ -311,36 +315,37 @@ class PusTcPacket(CcsdsSpacePacket):
     def create(cls, **kwargs):
         source = kwargs.get('source', None)
 
-        if kwargs.get('secondary_header_flag'):
+        if kwargs.get('secondary_header_flag', True):
             secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if source else 0)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TC
         kwargs['seq_count_or_name'] = kwargs.get('name', None)
         packet = super(cls, cls).create(**kwargs)
 
-        pus_version = kwargs.get('pus_version', TC_PACKET_PUS_VERSION_NUMBER)
-        if pus_version:
-            _validate_int_field('TC packet PUS version', pus_version, 0, 0b1111)
-            packet.secondary_header.pus_version = pus_version
+        if packet.header.secondary_header_flag:
+            pus_version = kwargs.get('pus_version', TC_PACKET_PUS_VERSION_NUMBER)
+            if pus_version:
+                _validate_int_field('TC packet PUS version', pus_version, 0, 0b1111)
+                packet.secondary_header.pus_version = pus_version
 
-        ack_flags = kwargs.get('ack_flags', AckFlag.NONE)
-        if ack_flags:
-            _validate_int_field('Acknowledgement flags', ack_flags, 0, 0b1111)
-            packet.secondary_header.ack_flags = ack_flags
+            ack_flags = kwargs.get('ack_flags', AckFlag.NONE)
+            if ack_flags:
+                _validate_int_field('Acknowledgement flags', ack_flags, 0, 0b1111)
+                packet.secondary_header.ack_flags = ack_flags
 
-        service_type = kwargs.get('service_type', None)
-        if service_type:
-            _validate_int_field('Service type', service_type, 0, 255)
-            packet.secondary_header.service_type = service_type
+            service_type = kwargs.get('service_type', None)
+            if service_type:
+                _validate_int_field('Service type', service_type, 0, 255)
+                packet.secondary_header.service_type = service_type
 
-        service_subtype = kwargs.get('service_subtype', None)
-        if service_subtype:
-            _validate_int_field('Service subtype', service_subtype, 0, 255)
-            packet.secondary_header.service_subtype = service_subtype
+            service_subtype = kwargs.get('service_subtype', None)
+            if service_subtype:
+                _validate_int_field('Service subtype', service_subtype, 0, 255)
+                packet.secondary_header.service_subtype = service_subtype
 
-        if source:
-            _validate_int_field('Source ID', source, 0, 0xffff)
-            packet.secondary_header.source = source
+            if source:
+                _validate_int_field('Source ID', source, 0, 0xffff)
+                packet.secondary_header.source = source
 
         return packet
 
