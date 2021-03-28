@@ -97,8 +97,10 @@ class CcsdsSpacePacket:
             raise IncompletePacketException()
         if packet_size > CCSDS_MAX_PACKET_SIZE:
             raise InvalidPacketException("Packet too large")
-        if has_pec and validate_pec and crc_ccitt_calculate(buffer[:packet_size]) != 0:
-            raise CrcException
+        if has_pec and validate_pec:
+            mv = memoryview(buffer)
+            if crc_ccitt_calculate(mv[:packet_size]) != 0:
+                raise CrcException
 
         packet_version_number = (packet_id >> 13) & 0b111
         packet_type = PacketType.TC if (packet_id >> 12) & 0b1 == 1 else PacketType.TM
