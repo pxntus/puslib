@@ -458,20 +458,21 @@ class PusTmPacket(CcsdsSpacePacket):
 
             # "Optional" parts of secondary header
             if has_type_counter_field:
-                msg_type_counter = _UINT16_STRUCT.unpack_from(buffer, offset)
+                msg_type_counter, = _UINT16_STRUCT.unpack_from(buffer, offset)
                 offset += _UINT16_STRUCT.size
             else:
                 msg_type_counter = None
             if has_destination_field:
-                destination = _UINT16_STRUCT.unpack_from(buffer, offset)
+                destination, = _UINT16_STRUCT.unpack_from(buffer, offset)
                 offset += _UINT16_STRUCT.size
             else:
                 destination = None
 
             if cuc_time:
-                cuc_time.from_bytes(buffer)
+                cuc_time.from_bytes(buffer[offset:])
             else:
-                cuc_time = CucTime.deserialize(buffer)
+                cuc_time = CucTime.deserialize(buffer[offset:])
+            offset += len(cuc_time)
         else:
             data_field_except_source_length = 2 if has_pec else 0
             if len(buffer) < _CCSDS_HDR_STRUCT.size + data_field_except_source_length:
