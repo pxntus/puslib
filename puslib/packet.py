@@ -61,6 +61,11 @@ class CcsdsSpacePacket:
     def __len__(self):
         return _CCSDS_HDR_STRUCT.size + (len(self.payload) if self.payload else 0) + (2 if self._has_pec else 0)
 
+    def __bytes__(self):
+        buffer = bytearray(len(self))
+        self.serialize(buffer)
+        return bytes(buffer)
+
     def __str__(self):
         s = f"{self.header.packet_type.name} Packet\n"
         s += f"  APID: {self.header.apid}\n"

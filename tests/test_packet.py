@@ -90,6 +90,7 @@ def test_tc_packet_serialize(args, binary):
     binary_length = packet.serialize(buffer)
     assert binary_length == len(binary)
     assert buffer[0:binary_length] == binary
+    assert bytes(packet) == binary
 
 
 @pytest.mark.parametrize("args, binary", [
@@ -174,6 +175,7 @@ def test_tm_packet_serialize(args, binary):
     binary_length = packet.serialize(buffer)
     assert binary_length == len(binary)
     assert buffer[0:binary_length] == binary
+    assert bytes(packet) == binary
 
 
 @pytest.mark.parametrize("args, binary", [
