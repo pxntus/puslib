@@ -374,6 +374,7 @@ class PusTmPacket(CcsdsSpacePacket):
                 size += _UINT16_STRUCT.size
             if self.secondary_header.destination:
                 size += _UINT16_STRUCT.size
+            size += len(self.secondary_header.time)
         return size
 
     @property
@@ -405,8 +406,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return self.payload
 
     def serialize(self, buffer):
-        super().serialize(buffer)
-        offset = _CCSDS_HDR_STRUCT.size
+        offset = super().serialize(buffer)
 
         # First static part of secondary header
         tmp = self.secondary_header.pus_version << 4 | self.secondary_header.spacecraft_time_ref_status
@@ -430,12 +430,15 @@ class PusTmPacket(CcsdsSpacePacket):
         if self.payload:
             source_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.msg_type_counter else 0) - (2 if self.secondary_header.destination else 0) - len(self.secondary_header.time) - (2 if self.has_pec else 0)
             buffer[offset:offset + source_data_length] = self.payload
+            offset += source_data_length
 
         # Packet error control
         if self.has_pec:
-            offset += source_data_length if self.payload else 0
             pec = crc_ccitt_calculate(buffer[0:offset])
             _UINT16_STRUCT.pack_into(buffer, offset, pec)
+            offset += _UINT16_STRUCT.size
+
+        return offset
 
     @classmethod
     def deserialize(cls, buffer, cuc_time=None, has_type_counter_field=True, has_destination_field=True, has_pec=True, validate_fields=True, validate_pec=True):
@@ -531,7 +534,7 @@ class PusTmPacket(CcsdsSpacePacket):
         destination = kwargs.get('destination', None)
         time = kwargs.get('time')
 
-        if kwargs.get('secondary_header_flag'):
+        if kwargs.get('secondary_header_flag', True):
             secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter else 0) + (2 if destination else 0) + len(time)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TM
@@ -544,9 +547,8 @@ class PusTmPacket(CcsdsSpacePacket):
             packet.secondary_header.pus_version = pus_version
 
         spacecraft_time_ref_status = kwargs.get('spacecraft_time_ref_status', 0)
-        if spacecraft_time_ref_status:
-            _validate_int_field('Spacecraft time reference status', spacecraft_time_ref_status, 0, 0b1111)
-            packet.secondary_header.spacecraft_time_ref_status = spacecraft_time_ref_status
+        _validate_int_field('Spacecraft time reference status', spacecraft_time_ref_status, 0, 0b1111)
+        packet.secondary_header.spacecraft_time_ref_status = spacecraft_time_ref_status
 
         service_type = kwargs.get('service_type', None)
         if service_type:

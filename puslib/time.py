@@ -74,7 +74,7 @@ class CucTime:
         return (len(self._format) if self._has_preamble else 0) + self._format.basic_time_unit_length + self._format.frac_time_unit_length
 
     def __bytes__(self):
-        return (bytes(self._format) if self._has_preamble else b'') + (bitstring.pack(f'uintbe:{self._basic_time_unit_length * 8}', self._seconds).bytes) + (bitstring.pack(f'uintbe:{self._frac_time_unit_length * 8}', self._fraction).bytes if self._frac_time_unit_length else b'')
+        return (bytes(self._format) if self._has_preamble else b'') + (bitstring.pack(f'uintbe:{self._format.basic_time_unit_length * 8}', self._seconds).bytes) + (bitstring.pack(f'uintbe:{self._format.frac_time_unit_length * 8}', self._fraction).bytes if self._format.frac_time_unit_length else b'')
 
     @property
     def epoch(self):
