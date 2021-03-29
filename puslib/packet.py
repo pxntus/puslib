@@ -14,7 +14,13 @@ TC_PACKET_PUS_VERSION_NUMBER = 2
 
 _CCSDS_HDR_STRUCT = struct.Struct('>HHH')
 _COMMON_SEC_HDR_STRUCT = struct.Struct('>BBB')
-_UINT16_STRUCT = struct.Struct('>H')
+
+_SOURCE_FIELD_SIZE = 2
+
+_MSG_TYPE_COUNTER_FIELD_SIZE = 2
+_DESTINATION_FIELD_SIZE = 2
+
+_PEC_FIELD_SIZE = 2
 
 
 def _validate_int_field(field_name, val, min_val, max_val):
@@ -196,7 +202,7 @@ class PusTcPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
             if self.secondary_header.source:
-                size += _UINT16_STRUCT.size
+                size += _SOURCE_FIELD_SIZE
         return size
 
     @property
@@ -233,8 +239,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
         # Last "optional" part of secondary header
         if self.secondary_header.source:
-            _UINT16_STRUCT.pack_into(buffer, offset, self.secondary_header.source)
-            offset += _UINT16_STRUCT.size
+            buffer[offset:offset + _SOURCE_FIELD_SIZE] = self.secondary_header.source.to_bytes(_SOURCE_FIELD_SIZE, byteorder='big')
+            offset += _SOURCE_FIELD_SIZE
 
         # User data field
         if self.payload:
@@ -245,8 +251,8 @@ class PusTcPacket(CcsdsSpacePacket):
         # Packet error control
         if self.has_pec:
             pec = crc_ccitt_calculate(buffer[0:offset])
-            _UINT16_STRUCT.pack_into(buffer, offset, pec)
-            offset += _UINT16_STRUCT.size
+            buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+            offset += _PEC_FIELD_SIZE
 
         return offset
 
@@ -268,8 +274,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
             # Last "optional" part of secondary header
             if has_source_field:
-                source, = _UINT16_STRUCT.unpack_from(buffer, offset)
-                offset += _UINT16_STRUCT.size
+                source = int.from_bytes(buffer[offset:offset + _SOURCE_FIELD_SIZE], byteorder='big')
+                offset += _SOURCE_FIELD_SIZE
             else:
                 source = None
         else:
@@ -378,9 +384,9 @@ class PusTmPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
             if self.secondary_header.msg_type_counter:
-                size += _UINT16_STRUCT.size
+                size += _MSG_TYPE_COUNTER_FIELD_SIZE
             if self.secondary_header.destination:
-                size += _UINT16_STRUCT.size
+                size += _DESTINATION_FIELD_SIZE
             size += len(self.secondary_header.time)
         return size
 
@@ -423,11 +429,11 @@ class PusTmPacket(CcsdsSpacePacket):
 
         # "Optional" parts of secondary header
         if self.secondary_header.msg_type_counter:
-            _UINT16_STRUCT.pack_into(buffer, offset, self.secondary_header.msg_type_counter)
-            offset += _UINT16_STRUCT.size
+            buffer[offset:offset + _MSG_TYPE_COUNTER_FIELD_SIZE] = self.secondary_header.msg_type_counter.to_bytes(_MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
+            offset += _MSG_TYPE_COUNTER_FIELD_SIZE
         if self.secondary_header.destination:
-            _UINT16_STRUCT.pack_into(buffer, offset, self.secondary_header.destination)
-            offset += _UINT16_STRUCT.size
+            buffer[offset:offset + _DESTINATION_FIELD_SIZE] = self.secondary_header.destination.to_bytes(_DESTINATION_FIELD_SIZE, byteorder='big')
+            offset += _DESTINATION_FIELD_SIZE
 
         # Time field
         buffer[offset:offset + len(self.secondary_header.time)] = bytes(self.secondary_header.time)
@@ -442,8 +448,8 @@ class PusTmPacket(CcsdsSpacePacket):
         # Packet error control
         if self.has_pec:
             pec = crc_ccitt_calculate(buffer[0:offset])
-            _UINT16_STRUCT.pack_into(buffer, offset, pec)
-            offset += _UINT16_STRUCT.size
+            buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+            offset += _PEC_FIELD_SIZE
 
         return offset
 
@@ -465,13 +471,13 @@ class PusTmPacket(CcsdsSpacePacket):
 
             # "Optional" parts of secondary header
             if has_type_counter_field:
-                msg_type_counter, = _UINT16_STRUCT.unpack_from(buffer, offset)
-                offset += _UINT16_STRUCT.size
+                msg_type_counter = int.from_bytes(buffer[offset:offset + _MSG_TYPE_COUNTER_FIELD_SIZE], byteorder='big')
+                offset += _MSG_TYPE_COUNTER_FIELD_SIZE
             else:
                 msg_type_counter = None
             if has_destination_field:
-                destination, = _UINT16_STRUCT.unpack_from(buffer, offset)
-                offset += _UINT16_STRUCT.size
+                destination = int.from_bytes(buffer[offset:offset + _DESTINATION_FIELD_SIZE], byteorder='big')
+                offset += _DESTINATION_FIELD_SIZE
             else:
                 destination = None
 
