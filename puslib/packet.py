@@ -250,7 +250,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
         # Packet error control
         if self.has_pec:
-            pec = crc_ccitt_calculate(buffer[0:offset])
+            mv = memoryview(buffer)
+            pec = crc_ccitt_calculate(mv[0:offset])
             buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
             offset += _PEC_FIELD_SIZE
 
@@ -447,7 +448,8 @@ class PusTmPacket(CcsdsSpacePacket):
 
         # Packet error control
         if self.has_pec:
-            pec = crc_ccitt_calculate(buffer[0:offset])
+            mv = memoryview(buffer)
+            pec = crc_ccitt_calculate(mv[0:offset])
             buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
             offset += _PEC_FIELD_SIZE
 
