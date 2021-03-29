@@ -1,4 +1,3 @@
-import struct
 import math
 from enum import IntEnum
 from datetime import datetime
@@ -24,7 +23,7 @@ class _TimeFormat:
             raise InvalidTimeFormat("Fractional time unit must be 0 to 10 octets")
         self.frac_time_unit_length = frac_time_unit_length
         self.epoch = epoch if epoch else TAI_EPOCH
-        self.time_code_id = TimeCodeIdentification.AGENCY_DEFINED if epoch else TimeCodeIdentification.TAI
+        self.time_code_id = epoch if epoch else TimeCodeIdentification.TAI
         self.preamble = preamble if preamble else self._pack_preamble()
 
     def __bytes__(self):
@@ -42,24 +41,22 @@ class _TimeFormat:
 
         octet1 = p_field_extension << 7 | self.time_code_id << 4 | basic_time_unit_num_octets << 2 | basic_frac_unit_num_octets
         if p_field_extension:
-            p_field_extension = 0
-            reserved = 0
-            octet2 = p_field_extension << 7 | basic_time_unit_additional_octet << 5 | basic_frac_unit_additional_octet << 2 | reserved
-            preamble = struct.pack('BB', octet1, octet2)
-        else:
-            preamble = struct.pack('B', octet1)
+            octet2 = basic_time_unit_additional_octet << 5 | basic_frac_unit_additional_octet << 2
+        preamble = bytes([octet1]) + (bytes([octet2]) if p_field_extension else b'')
         return preamble
 
     @classmethod
-    def deserialize(cls, buffer, epoch=None):
+    def deserialize(cls, buffer):
         if len(buffer) < 2:
             raise ValueError("Buffer too small to contain CUC")
-        octet1, octet2 = struct.unpack('>BB', buffer)
+        octet1 = buffer[0]
         p_field_extension = octet1 >> 7
-        epoch = (octet1 >> 4) & 0b111
-        basic_time_unit_length = ((octet1 >> 2) & 0b11) + (((octet2 >> 5) & 0b11) if p_field_extension else 0)
+        if p_field_extension:
+            octet2 = buffer[1]
+        basic_time_unit_length = (((octet1 >> 2) & 0b11) + 1) + (((octet2 >> 5) & 0b11) if p_field_extension else 0)
         frac_time_unit_length = octet1 & 0b11 + (((octet2 >> 2) & 0b111) if p_field_extension else 0)
-        preamble = buffer[0] + (buffer[1] if p_field_extension else b'')
+        epoch = (octet1 >> 4) & 0b111
+        preamble = bytes([buffer[0]]) + (bytes([buffer[1]]) if p_field_extension else b'')
         return cls(basic_time_unit_length, frac_time_unit_length, epoch, preamble)
 
 
@@ -138,7 +135,7 @@ class CucTime:
         if not has_preamble and not (epoch and basic_time_unit_length and frac_time_unit_length):
             raise ValueError("If preamble not used CUC must be defined by the other arguments")
         if has_preamble:
-            time_format = _TimeFormat.deserialize(buffer, epoch)
+            time_format = _TimeFormat.deserialize(buffer)
             basic_time_unit_length = time_format.basic_time_unit_length
             frac_time_unit_length = time_format.frac_time_unit_length
             preamble = bytes(time_format)

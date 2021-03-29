@@ -85,14 +85,17 @@ def test_from_datetime(args, seconds_since_epoch):
     assert ct.fraction == round(fraction * ((2 ** (args[1] * 8)) - 1))
 
 
-@pytest.mark.parametrize("packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction", [
+COMMON_CUCTIME_TEST_VECTORS = [
     (bytes([0b00010001, 0x02, 0x03]), True, TimeCodeIdentification.TAI, 1, 1, 2, 3),
     (bytes([0b10011101, 0b00100000, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03]), True, TimeCodeIdentification.TAI, 5, 1, 2, 3),
     (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 4, 3, 2, 3),
     (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 5, 3, 2, 3),
     (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 4, 4, 2, 3),
     (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 5, 5, 2, 3),
-])
+]
+
+
+@pytest.mark.parametrize("packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction", COMMON_CUCTIME_TEST_VECTORS)
 def test_from_bytes(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction):
     ct = CucTime(num_second_octets, num_fraction_octets, has_preamble=has_preamble)
     ct.from_bytes(packed_cuc)
@@ -101,9 +104,19 @@ def test_from_bytes(packed_cuc, has_preamble, epoch, num_second_octets, num_frac
     assert ct.fraction == fraction
 
 
-def test_serialize():
-    pass
+@pytest.mark.parametrize("packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction", COMMON_CUCTIME_TEST_VECTORS)
+def test_serialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction):
+    ct = CucTime(num_second_octets, num_fraction_octets, seconds, fraction, has_preamble, epoch)
+    assert len(ct) == len(packed_cuc)
+    assert bytes(ct) == packed_cuc
 
 
-def test_deserialize():
-    pass
+@pytest.mark.parametrize("packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction", COMMON_CUCTIME_TEST_VECTORS)
+def test_deserialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction):
+    ct = CucTime.deserialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets)
+    assert len(ct) == len(packed_cuc)
+    assert ct.epoch == epoch
+    assert ct.seconds == seconds
+    assert ct.fraction == fraction
+    assert ct._format.basic_time_unit_length == num_second_octets
+    assert ct._format.frac_time_unit_length == num_fraction_octets
