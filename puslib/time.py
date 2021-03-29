@@ -23,7 +23,7 @@ class _TimeFormat:
             raise InvalidTimeFormat("Fractional time unit must be 0 to 10 octets")
         self.frac_time_unit_length = frac_time_unit_length
         self.epoch = epoch if epoch else TAI_EPOCH
-        self.time_code_id = epoch if epoch else TimeCodeIdentification.TAI
+        self.time_code_id = TimeCodeIdentification.AGENCY_DEFINED if epoch else TimeCodeIdentification.TAI
         self.preamble = preamble if preamble else self._pack_preamble()
 
     def __bytes__(self):
@@ -132,7 +132,7 @@ class CucTime:
     def deserialize(cls, buffer, has_preamble=True, epoch=None, basic_time_unit_length=None, frac_time_unit_length=None):
         if len(buffer) < 2:
             raise ValueError("Buffer too small to contain CUC")
-        if not has_preamble and not (epoch and basic_time_unit_length and frac_time_unit_length):
+        if not has_preamble and not (basic_time_unit_length and frac_time_unit_length):
             raise ValueError("If preamble not used CUC must be defined by the other arguments")
         if has_preamble:
             time_format = _TimeFormat.deserialize(buffer)

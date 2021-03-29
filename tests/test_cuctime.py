@@ -1,5 +1,5 @@
 import math
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -86,12 +86,12 @@ def test_from_datetime(args, seconds_since_epoch):
 
 
 COMMON_CUCTIME_TEST_VECTORS = [
-    (bytes([0b00010001, 0x02, 0x03]), True, TimeCodeIdentification.TAI, 1, 1, 2, 3),
-    (bytes([0b10011101, 0b00100000, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03]), True, TimeCodeIdentification.TAI, 5, 1, 2, 3),
-    (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 4, 3, 2, 3),
-    (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 5, 3, 2, 3),
-    (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 4, 4, 2, 3),
-    (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03]), False, TimeCodeIdentification.TAI, 5, 5, 2, 3),
+    (bytes([0b00100001, 0x02, 0x03]), True, datetime(2000, 1, 1), 1, 1, 2, 3),
+    (bytes([0b10011101, 0b00100000, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03]), True, None, 5, 1, 2, 3),
+    (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, datetime(2000, 1, 1), 4, 3, 2, 3),
+    (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03]), False, None, 5, 3, 2, 3),
+    (bytes([0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03]), False, datetime(2000, 1, 1), 4, 4, 2, 3),
+    (bytes([0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03]), False, None, 5, 5, 2, 3),
 ]
 
 
@@ -115,7 +115,7 @@ def test_serialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fract
 def test_deserialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction):
     ct = CucTime.deserialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets)
     assert len(ct) == len(packed_cuc)
-    assert ct.epoch == epoch
+    assert ct.epoch == epoch if epoch else TAI_EPOCH
     assert ct.seconds == seconds
     assert ct.fraction == fraction
     assert ct._format.basic_time_unit_length == num_second_octets
