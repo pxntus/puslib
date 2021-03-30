@@ -7,7 +7,7 @@ class InputStream(metaclass=abc.ABCMeta):
         return (hasattr(subclass, 'read') and callable(subclass.read) or NotImplemented)
 
     @abc.abstractmethod
-    def read(self, buffer):
+    def read(self, packet):
         raise NotImplementedError
 
 
@@ -17,5 +17,5 @@ class OutputStream(metaclass=abc.ABCMeta):
         return (hasattr(subclass, 'write') and callable(subclass.write) or NotImplemented)
 
     @abc.abstractmethod
-    def write(self, buffer):
+    def write(self, packet):
         raise NotImplementedError
