@@ -4,7 +4,7 @@ from .error_codes import CommonErrorCode
 
 class FunctionManagement(PusService):
     def __init__(self, ident, pus_service_1, tm_distributor, function_spec):
-        super().__init__(self, 17, ident, pus_service_1, tm_distributor)
+        super().__init__(8, ident, pus_service_1, tm_distributor)
         super()._register_sub_service(1, self._perform)
         self._functions = function_spec
 

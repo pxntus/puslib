@@ -1,4 +1,5 @@
 import queue
+from enum import Enum
 
 from puslib.packet import AckFlag
 from puslib.policy import PusPolicy
@@ -18,7 +19,7 @@ class PusService:
 
     @property
     def service(self):
-        return self._service_type.value
+        return self._service_type
 
     @property
     def name(self):
@@ -32,14 +33,31 @@ class PusService:
         while not self._incoming_tc_queue.empty():
             tc_packet = self._incoming_tc_queue.get()
             subservice_handler = self._subservices[tc_packet.subservice]
-            success, pus_error_code = subservice_handler(tc_packet.app_data)
-            if not success and not pus_error_code:
-                pus_error_code = CommonErrorCode.ILLEGAL_APP_DATA.value
+            ret = subservice_handler(tc_packet.app_data)
+            if isinstance(ret, bool):
+                success = ret
+                pus_error_code = None if success else CommonErrorCode.ILLEGAL_APP_DATA.value
+            elif isinstance(ret, Enum):
+                success = False
+                pus_error_code = ret.value
+            else:
+                raise TypeError("Must return a bool or an enum")
 
             if tc_packet.ack(AckFlag.ACCEPTANCE):
                 self._pus_service_1.accept(tc_packet, code=pus_error_code, success=success)
             if tc_packet.ack(AckFlag.COMPLETION):
                 self._pus_service_1.complete(tc_packet, code=pus_error_code, success=success)
 
-    def _register_sub_service(self, number, callback):
-        self._subservices[number] = callback
+    def update(self):
+        pass
+
+    def _register_sub_service(self, number, func):
+        self._subservices[number] = func
+
+
+def set_policy(policy):
+    PusService.pus_policy = policy
+
+
+def get_policy():
+    return PusService.pus_policy

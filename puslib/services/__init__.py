@@ -1,6 +1,9 @@
 from enum import Enum
 
 from .pus_001_request_verification import RequestVerification
+from .pus_003_housekeeping import Housekeeping
+from .pus_005_event_reporting import EventReporting
+from .pus_008_function_management import FunctionManagement
 from .pus_017_test import Test
 
 
@@ -9,16 +12,16 @@ class PusServiceType(bytes, Enum):
         obj = bytes.__new__(cls, [service_number])
         obj._value_ = service_number
         obj.description = description
-        obj.make = service_class
+        obj.create = service_class
         return obj
 
     REQUEST_VERIFICATION = (1, "Request verification", RequestVerification)
     DEVICE_ACCESS = (2, "Device access", None)
-    HOUSEKEEPING = (3, "Housekeeping", None)
+    HOUSEKEEPING = (3, "Housekeeping", Housekeeping)
     PARAMETER_STATISTICS_REPORTING = (4, "Parameter statistics reporting", None)
-    EVENT_REPORTING = (5, "Event reporting", None)
+    EVENT_REPORTING = (5, "Event reporting", EventReporting)
     MEMORY_MANAGEMENT = (6, "Memory management", None)
-    FUNCTION_MANAGEMENT = (8, "Function Management", None)
+    FUNCTION_MANAGEMENT = (8, "Function Management", FunctionManagement)
     TIME_MANAGEMENT = (9, "Time Management", None)
     TIME_BASED_SCHEDULING = (11, "Time-based scheduling", None)
     ONBOARD_MONITORING = (12, "On-board monitoring", None)
