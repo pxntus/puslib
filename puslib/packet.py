@@ -75,7 +75,7 @@ class CcsdsSpacePacket:
     def __str__(self):
         s = f"{self.header.packet_type.name} Packet\n"
         s += f"  APID: {self.header.apid}\n"
-        s += f"  Sequence count: {self.header.seq_count_or_name}"
+        s += f"  Sequence count: {self.header.seq_count_or_name}\n"
         return s
 
     @property
@@ -204,6 +204,13 @@ class PusTcPacket(CcsdsSpacePacket):
             if self.secondary_header.source:
                 size += _SOURCE_FIELD_SIZE
         return size
+
+    def __str__(self):
+        s = super().__str__()
+        if self.header.secondary_header_flag:
+            s += f"  Service type: {self.secondary_header.service_type}\n"
+            s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+        return s
 
     @property
     def name(self):
@@ -391,6 +398,13 @@ class PusTmPacket(CcsdsSpacePacket):
             size += len(self.secondary_header.time)
         return size
 
+    def __str__(self):
+        s = super().__str__()
+        if self.header.secondary_header_flag:
+            s += f"  Service type: {self.secondary_header.service_type}\n"
+            s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+        return s
+
     @property
     def seq_count(self):
         return self.header.seq_count_or_name
@@ -548,7 +562,7 @@ class PusTmPacket(CcsdsSpacePacket):
     def create(cls, **kwargs):
         msg_type_counter = kwargs.get('msg_type_counter', None)
         destination = kwargs.get('destination', None)
-        time = kwargs.get('time')
+        time = kwargs.get('time', None)
 
         if kwargs.get('secondary_header_flag', True):
             secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter else 0) + (2 if destination else 0) + len(time)
