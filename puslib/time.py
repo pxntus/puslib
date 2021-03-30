@@ -70,6 +70,10 @@ class CucTime:
     def __len__(self):
         return (len(self._format) if self._has_preamble else 0) + self._format.basic_time_unit_length + self._format.frac_time_unit_length
 
+    def __str__(self):
+        seconds = self._seconds + (self._fraction / (2 ** (self._format.frac_time_unit_length * 8)))
+        return f"{seconds:.3f} seconds since epoch ({self._format.epoch})"
+
     def __bytes__(self):
         return (bytes(self._format) if self._has_preamble else b'') + (bitstring.pack(f'uintbe:{self._format.basic_time_unit_length * 8}', self._seconds).bytes) + (bitstring.pack(f'uintbe:{self._format.frac_time_unit_length * 8}', self._fraction).bytes if self._format.frac_time_unit_length else b'')
 
@@ -150,3 +154,11 @@ class CucTime:
         fraction = int.from_bytes(buffer[fraction_offset:fraction_offset + frac_time_unit_length], byteorder='big')
 
         return cls(basic_time_unit_length, frac_time_unit_length, seconds=seconds, fraction=fraction, has_preamble=has_preamble, epoch=epoch, preamble=preamble)
+
+    @classmethod
+    def create(cls, basic_time_unit_length, frac_time_unit_length, seconds=0, fraction=0, has_preamble=True, epoch=None, preamble=None):
+        cuc_time = cls(basic_time_unit_length, frac_time_unit_length, seconds, fraction, has_preamble, epoch, preamble)
+        if seconds == 0 and fraction == 0:
+            dt_now = datetime.utcnow()
+            cuc_time.from_datetime(dt_now)
+        return cuc_time

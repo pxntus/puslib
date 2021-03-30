@@ -1,7 +1,6 @@
 from enum import IntEnum
-from datetime import datetime
 
-from .service import PusService
+from .service import PusService, PusServiceType
 
 
 class _SubService(IntEnum):
@@ -17,7 +16,7 @@ class _SubService(IntEnum):
 
 class RequestVerification(PusService):
     def __init__(self, ident, tm_distributor):
-        super().__init__(1, ident=ident, tm_distributor=tm_distributor)
+        super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_distributor=tm_distributor)
 
     def enqueue(self, tc_packet):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
@@ -58,15 +57,14 @@ class RequestVerification(PusService):
             failure_data)
 
     def _generate_report(self, packet, subservice, code, success, failure_data):
-        #payload = packet.raw_header[:-2]  # TODO: Fix
-        payload = None
+        payload = packet.request_id()
         if not success:
-            payload = code.to_bytes(1, byteorder='big') + (failure_data if failure_data else b'')
+            payload += code.to_bytes(1, byteorder='big') + (failure_data if failure_data else b'')
         time = PusService.pus_policy.time()
         report = PusService.pus_policy.create_tm_packet(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
-            service_type=self._service_type,
+            service_type=self._service_type.value,
             service_subtype=subservice,
             time=time,
             data=payload

@@ -99,6 +99,11 @@ class CcsdsSpacePacket:
         _CCSDS_HDR_STRUCT.pack_into(buffer, 0, packet_id, seq_ctrl, self.header.data_length)
         return _CCSDS_HDR_STRUCT.size
 
+    def request_id(self):
+        packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
+        seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
+        return struct.pack('>HH', packet_id, seq_ctrl)
+
     @classmethod
     def deserialize(cls, buffer, has_pec=True, validate_pec=True):
         packet_id, seq_ctrl, data_length = _CCSDS_HDR_STRUCT.unpack_from(buffer)
@@ -210,6 +215,8 @@ class PusTcPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             s += f"  Service type: {self.secondary_header.service_type}\n"
             s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+            if self.payload:
+                s += f"  Application data: 0x{self.payload.hex()}"
         return s
 
     @property
@@ -403,6 +410,9 @@ class PusTmPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             s += f"  Service type: {self.secondary_header.service_type}\n"
             s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+            s += f"  CUC timestamp: {self.secondary_header.time}\n"
+            if self.payload:
+                s += f"  Source data: 0x{self.payload.hex()}"
         return s
 
     @property
