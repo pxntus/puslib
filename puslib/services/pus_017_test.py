@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from .service import PusService
+from .service import PusService, PusServiceType
 
 
 class Test(PusService):
     def __init__(self, ident, pus_service_1, tm_distributor):
-        super().__init__(17)
+        super().__init__(PusServiceType.TEST)
         super()._register_sub_service(1, self.connection_test)
 
     def connection_test(self, packet):
