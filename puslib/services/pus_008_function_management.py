@@ -1,35 +1,26 @@
+from puslib import get_pus_policy
 from .service import PusService, PusServiceType
 from .error_codes import CommonErrorCode
 
 
 class FunctionManagement(PusService):
-    def __init__(self, ident, pus_service_1, tm_distributor, function_spec):
+    def __init__(self, ident, pus_service_1, tm_distributor):
         super().__init__(PusServiceType.FUNCTION_MANAGEMENT, ident, pus_service_1, tm_distributor)
         super()._register_sub_service(1, self._perform)
-        self._functions = function_spec
+        self._functions = {}
 
     def _perform(self, app_data):
-        fid_size = PusService.pus_policy.function_id_type.size
-        if len(app_data) < fid_size:
-            return False, CommonErrorCode.INCOMPLETE
-        fid = PusService.pus_policy.function_id_type.unpack(app_data)
-        if fid not in self._functions:
-            return False, CommonErrorCode.PUS8_INVALID_FID
+        fid = get_pus_policy().IdType()
+        if len(app_data) < fid.size:
+            return CommonErrorCode.INCOMPLETE
+        fid.value = int.from_bytes(app_data[:fid.size], byteorder='big')
+        if fid.value not in self._functions:
+            return CommonErrorCode.PUS8_INVALID_FID
+        f = self._functions[fid.value]
 
-        f = self._functions[fid]
-        if 'impl' not in f:
-            return False, CommonErrorCode.PUS8_FUNCTION_NOT_IMPLEMENTED
-        if len(app_data) != fid_size + f['struct'].size:
-            return False, CommonErrorCode.ILLEGAL_APP_DATA
-        args = f['struct'].unpack_from(app_data, fid_size)
-        # TODO: Implement argument verification
+        # TODO: Implement argument unpacking.
 
-        return f['impl'](*args)
+        return f()
 
-    def function(self, func, fid):
-        self._functions[fid]['impl'] = func
-
-        def wrapper(*args, **kwargs):
-            func(*args, **kwargs)
-
-        return wrapper
+    def add(self, func, fid):
+        self._functions[fid] = func
