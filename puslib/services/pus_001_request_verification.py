@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+from puslib import get_pus_policy
 from .service import PusService, PusServiceType
 
 
@@ -60,8 +61,8 @@ class RequestVerification(PusService):
         payload = packet.request_id()
         if not success:
             payload += code.to_bytes(1, byteorder='big') + (failure_data if failure_data else b'')
-        time = PusService.pus_policy.time()
-        report = PusService.pus_policy.create_tm_packet(
+        time = get_pus_policy().CucTime()
+        report = get_pus_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
             service_type=self._service_type.value,

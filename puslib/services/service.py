@@ -2,7 +2,6 @@ import queue
 from enum import Enum
 
 from puslib.packet import AckFlag
-from puslib.policy import PusPolicy
 from .error_codes import CommonErrorCode
 
 
@@ -39,8 +38,6 @@ class PusServiceType(bytes, Enum):
 
 
 class PusService:
-    pus_policy = PusPolicy
-
     def __init__(self, service_type, ident=None, pus_service_1=None, tm_distributor=None):
         self._service_type = service_type
         self._subservices = dict()
@@ -89,11 +86,3 @@ class PusService:
 
     def _register_sub_service(self, number, func):
         self._subservices[number] = func
-
-
-def set_policy(policy):
-    PusService.pus_policy = policy
-
-
-def get_policy():
-    return PusService.pus_policy
