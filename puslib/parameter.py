@@ -1,3 +1,5 @@
+
+import struct
 from enum import IntEnum
 
 from .time import CucTime
@@ -20,7 +22,7 @@ class PacketFieldType(IntEnum):
 
 
 class Parameter:
-    def __init__(self, name, value_type, init_value=None):
+    def __init__(self, value_type, init_value=None):
         if init_value:
             self._validate(init_value)
         self._value = init_value
@@ -43,13 +45,17 @@ class Parameter:
     def format(self):
         raise NotImplementedError
 
+    @property
+    def size(self):
+        return struct.calcsize(self.format)
+
     def _validate(self, value):
         raise NotImplementedError
 
 
 class BoolParameter(Parameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Boolean, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Boolean, init_value)
 
     def _validate(self, value):
         if not isinstance(value, bool):
@@ -67,8 +73,8 @@ class _IntegerParameter(Parameter):
 
 
 class UInt8Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.UInt, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.UInt, init_value)
 
     def _validate(self, value):
         super()._validate(value)
@@ -81,8 +87,8 @@ class UInt8Parameter(_IntegerParameter):
 
 
 class UInt16Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.UInt, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.UInt, init_value)
 
     def _validate(self, value):
         if not (0 <= value <= 65535):
@@ -94,8 +100,8 @@ class UInt16Parameter(_IntegerParameter):
 
 
 class UInt32Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.UInt, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.UInt, init_value)
 
     def _validate(self, value):
         if not (0 <= value <= 4294967295):
@@ -107,8 +113,8 @@ class UInt32Parameter(_IntegerParameter):
 
 
 class UInt64Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.UInt, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.UInt, init_value)
 
     def _validate(self, value):
         if not (0 <= value <= 18446744073709551615):
@@ -120,8 +126,8 @@ class UInt64Parameter(_IntegerParameter):
 
 
 class Int8Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Int, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Int, init_value)
 
     def _validate(self, value):
         super()._validate(value)
@@ -134,8 +140,8 @@ class Int8Parameter(_IntegerParameter):
 
 
 class Int16Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Int, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Int, init_value)
 
     def _validate(self, value):
         if not (-32768 <= value <= 32767):
@@ -148,7 +154,7 @@ class Int16Parameter(_IntegerParameter):
 
 class Int32Parameter(_IntegerParameter):
     def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Int, init_value)
+        super().__init__(PacketFieldType.Int, init_value)
 
     def _validate(self, value):
         if not (-2147483648 <= value <= 2147483647):
@@ -160,8 +166,8 @@ class Int32Parameter(_IntegerParameter):
 
 
 class Int64Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Int, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Int, init_value)
 
     def _validate(self, value):
         if not (-9223372036854775808 <= value <= 9223372036854775807):
@@ -191,8 +197,8 @@ class Real64Parameter(_RealParameter):
 
 
 class OctetStringParameter(Parameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.OctetString, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.OctetString, init_value)
 
     def _validate(self, value):
         if not isinstance(value, (bytes, bytearray)):
@@ -204,8 +210,8 @@ class OctetStringParameter(Parameter):
 
 
 class AbsoluteTimeParameter(Parameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.AbsoluteTime, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.AbsoluteTime, init_value)
 
     def _validate(self, value):
         if not isinstance(value, CucTime):
@@ -217,13 +223,13 @@ class AbsoluteTimeParameter(Parameter):
 
 
 class RelativeTimeParameter(AbsoluteTimeParameter):
-    def __init__(self, name, init_value=None):
-        super(Parameter, self).__init__(name, PacketFieldType.RelativeTime, init_value)
+    def __init__(self, init_value=None):
+        super(Parameter, self).__init__(PacketFieldType.RelativeTime, init_value)
 
 
 class PacketParameter(Parameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(name, PacketFieldType.Packet, init_value)
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Packet, init_value)
 
     def _validate(self, value):
         if not isinstance(value, PusTcPacket):
