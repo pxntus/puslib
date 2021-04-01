@@ -8,7 +8,7 @@ if sys.version_info < _MIN_PYTHON:
 __version__ = "0.1.0"
 
 
-from .packet import PusTcPacket, PusTmPacket  # noqa: E402
+from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
 from .time import CucTime  # noqa: E402
 from .parameter import UInt16Parameter  # noqa: E402
 
@@ -23,7 +23,11 @@ class PusPolicy:
 
     @property
     def PusTcPacket(self):
-        return partial(PusTcPacket.create, ack_flags=packet.AckFlag.ACCEPTANCE, has_source_field=False)
+        return partial(PusTcPacket.create, ack_flags=AckFlag.ACCEPTANCE, has_source_field=False)
+
+    @property
+    def deserialize_tc(self):
+        return partial(PusTcPacket.deserialize, has_source_field=False)
 
     @property
     def PusTmPacket(self):
