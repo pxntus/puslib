@@ -1,5 +1,6 @@
 .vscode
 __pycache__/
+prototyping/
 .pytest_cache/
 .env
 .venv
