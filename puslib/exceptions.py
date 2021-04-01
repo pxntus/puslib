@@ -21,3 +21,7 @@ class TooSmallBufferException(PusException):
 
 class InvalidTimeFormat(PusException):
     pass
+
+
+class TcPacketRoutingError(PusException):
+    pass
