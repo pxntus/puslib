@@ -66,119 +66,80 @@ class BoolParameter(Parameter):
         return '?'
 
 
-class _IntegerParameter(Parameter):
-    def _validate(self, value):
-        if not isinstance(value, int):
-            raise TypeError("Integer expected")
-
-
-class UInt8Parameter(_IntegerParameter):
+class _UnsignedIntegerParameter(Parameter):
     def __init__(self, init_value=None):
         super().__init__(PacketFieldType.UInt, init_value)
 
     def _validate(self, value):
-        super()._validate(value)
-        if not (0 <= value <= 255):
+        if not isinstance(value, int):
+            raise TypeError("Integer expected")
+        if not (0 <= value <= (2 ** (self.size * 8) - 1)):
             raise ValueError
 
+
+class UInt8Parameter(_UnsignedIntegerParameter):
     @property
     def format(self):
         return 'B'
 
 
-class UInt16Parameter(_IntegerParameter):
-    def __init__(self, init_value=None):
-        super().__init__(PacketFieldType.UInt, init_value)
-
-    def _validate(self, value):
-        if not (0 <= value <= 65535):
-            raise ValueError
-
+class UInt16Parameter(_UnsignedIntegerParameter):
     @property
     def format(self):
-        return 'H'
+        return '>H'
 
 
-class UInt32Parameter(_IntegerParameter):
-    def __init__(self, init_value=None):
-        super().__init__(PacketFieldType.UInt, init_value)
-
-    def _validate(self, value):
-        if not (0 <= value <= 4294967295):
-            raise ValueError
-
+class UInt32Parameter(_UnsignedIntegerParameter):
     @property
     def format(self):
-        return 'I'
+        return '>I'
 
 
-class UInt64Parameter(_IntegerParameter):
-    def __init__(self, init_value=None):
-        super().__init__(PacketFieldType.UInt, init_value)
-
-    def _validate(self, value):
-        if not (0 <= value <= 18446744073709551615):
-            raise ValueError
-
+class UInt64Parameter(_UnsignedIntegerParameter):
     @property
     def format(self):
-        return 'Q'
+        return '>Q'
 
 
-class Int8Parameter(_IntegerParameter):
+class _SignedIntegerParameter(Parameter):
     def __init__(self, init_value=None):
         super().__init__(PacketFieldType.Int, init_value)
 
     def _validate(self, value):
-        super()._validate(value)
-        if not (-128 <= value <= 127):
+        if not isinstance(value, int):
+            raise TypeError("Integer expected")
+        if not ((-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self.size * 8 - 1) - 1)):
             raise ValueError
 
+
+class Int8Parameter(_SignedIntegerParameter):
     @property
     def format(self):
         return 'b'
 
 
-class Int16Parameter(_IntegerParameter):
-    def __init__(self, init_value=None):
-        super().__init__(PacketFieldType.Int, init_value)
-
-    def _validate(self, value):
-        if not (-32768 <= value <= 32767):
-            raise ValueError
-
+class Int16Parameter(_SignedIntegerParameter):
     @property
     def format(self):
-        return 'h'
+        return '>h'
 
 
-class Int32Parameter(_IntegerParameter):
-    def __init__(self, name, init_value=None):
-        super().__init__(PacketFieldType.Int, init_value)
-
-    def _validate(self, value):
-        if not (-2147483648 <= value <= 2147483647):
-            raise ValueError
-
+class Int32Parameter(_SignedIntegerParameter):
     @property
     def format(self):
-        return 'i'
+        return '>i'
 
 
-class Int64Parameter(_IntegerParameter):
-    def __init__(self, init_value=None):
-        super().__init__(PacketFieldType.Int, init_value)
-
-    def _validate(self, value):
-        if not (-9223372036854775808 <= value <= 9223372036854775807):
-            raise ValueError
-
+class Int64Parameter(_SignedIntegerParameter):
     @property
     def format(self):
-        return 'q'
+        return '>q'
 
 
 class _RealParameter(Parameter):
+    def __init__(self, init_value=None):
+        super().__init__(PacketFieldType.Real, init_value)
+
     def _validate(self, value):
         if not isinstance(value, float):
             raise TypeError("Float expected")
@@ -187,13 +148,13 @@ class _RealParameter(Parameter):
 class Real32Parameter(_RealParameter):
     @property
     def format(self):
-        return 'f'
+        return '>f'
 
 
 class Real64Parameter(_RealParameter):
     @property
     def format(self):
-        return 'd'
+        return '>d'
 
 
 class OctetStringParameter(Parameter):
