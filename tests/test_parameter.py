@@ -23,14 +23,14 @@ ParamTestArgs = namedtuple('ParamTestArgs', ['param_class', 'pus_param_type', 'p
 def test_numeric_parameter(args):
     param = args.param_class(args.init_value)
     assert param.value == args.init_value
-    assert param.type == args.pus_param_type
+    assert param.type() == args.pus_param_type
     assert type(param.value) == args.python_type
     assert param.size == args.value_size
-    if param.type == parameter.PacketFieldType.UInt:
+    if param.type() == parameter.PacketFieldType.UInt:
         struct.pack(param.format, param.value) == args.init_value.to_bytes(args.value_size, byteorder='big')
-    elif param.type == parameter.PacketFieldType.Int:
+    elif param.type() == parameter.PacketFieldType.Int:
         struct.pack(param.format, param.value) == args.init_value.to_bytes(args.value_size, byteorder='big', signed=True)
-    elif param.type == parameter.PacketFieldType.Real:
+    elif param.type() == parameter.PacketFieldType.Real:
         pass
     else:
         assert False, "Unknown conversion to bytes"

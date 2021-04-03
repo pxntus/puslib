@@ -60,9 +60,9 @@ class Process:
             periodic(self._scheduler, interval, priority, func)
         return add_action
 
-    def function(self, fid):
+    def function(self, fid, args):
         def add_function(func):
             if PusServiceType.FUNCTION_MANAGEMENT.value not in self._pus_services:
                 raise RuntimeError("Process has no function management service")
-            self._pus_service_8.add(func, fid)
+            self._pus_service_8.add(func, fid, args)
         return add_function

@@ -1,6 +1,11 @@
+import struct
+from collections import namedtuple
+
 from puslib import get_pus_policy
 from .service import PusService, PusServiceType
 from .error_codes import CommonErrorCode
+
+_FuncDef = namedtuple('FuncDef', ['callback', 'arg_types'])
 
 
 class FunctionManagement(PusService):
@@ -11,16 +16,25 @@ class FunctionManagement(PusService):
 
     def _perform(self, app_data):
         fid = get_pus_policy().IdType()
-        if len(app_data) < fid.size:
+        try:
+            fid.value = int.from_bytes(app_data[:fid.size], byteorder='big')
+        except struct.error:
             return CommonErrorCode.INCOMPLETE
-        fid.value = int.from_bytes(app_data[:fid.size], byteorder='big')
         if fid.value not in self._functions:
             return CommonErrorCode.PUS8_INVALID_FID
-        f = self._functions[fid.value]
+        func_def = self._functions[fid.value]
 
-        # TODO: Implement argument unpacking.
+        args = []
+        offset = fid.size
+        try:
+            for arg in func_def.arg_types:
+                p = arg.from_bytes(app_data[offset:])
+                args.append(p.value)
+                offset += p.size
+        except struct.error:
+            return CommonErrorCode.PUS8_INVALID_ARGS
 
-        return f()
+        return func_def.callback(*args)
 
-    def add(self, func, fid):
-        self._functions[fid] = func
+    def add(self, func, fid, args):
+        self._functions[fid] = _FuncDef(func, args)

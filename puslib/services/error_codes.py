@@ -17,3 +17,4 @@ class CommonErrorCode(bytes, Enum):
 
     PUS8_INVALID_FID = (80, "Invalid function ID")
     PUS8_FUNCTION_NOT_IMPLEMENTED = (81, "Function not implemented")
+    PUS8_INVALID_ARGS = (82, "Invalid function arguments")
