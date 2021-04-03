@@ -38,12 +38,12 @@ class PusServiceType(bytes, Enum):
 
 
 class PusService:
-    def __init__(self, service_type, ident=None, pus_service_1=None, tm_distributor=None):
+    def __init__(self, service_type, ident=None, pus_service_1=None, tm_output_stream=None):
         self._service_type = service_type
         self._subservices = dict()
         self._ident = ident
         self._incoming_tc_queue = queue.SimpleQueue()
-        self._tm_distributor = tm_distributor
+        self._tm_output_stream = tm_output_stream
         self._pus_service_1 = pus_service_1
 
     @property

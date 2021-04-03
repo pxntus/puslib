@@ -20,8 +20,8 @@ class Report:
 
 
 class EventReporting(PusService):
-    def __init__(self, ident, pus_service_1, tm_distributor):
-        super().__init__(PusServiceType.EVENT_REPORTING, ident, pus_service_1, tm_distributor)
+    def __init__(self, ident, pus_service_1, tm_output_stream):
+        super().__init__(PusServiceType.EVENT_REPORTING, ident, pus_service_1, tm_output_stream)
         self._register_sub_service(5, self._enable)
         self._reports = {}
 

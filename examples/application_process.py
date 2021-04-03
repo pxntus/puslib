@@ -6,15 +6,13 @@ sys.path.append(r'../')
 from puslib import get_pus_policy  # noqa: E402
 from puslib.process import Process  # noqa: E402
 from puslib.parameter import UInt16Parameter, UInt32Parameter  # noqa: E402
-from puslib.distributor import TmDistributor  # noqa: E402
 from puslib.streams.console import ConsoleOutput  # noqa: E402
 
 
 tm_output_stream = ConsoleOutput()
-tm_distributor = TmDistributor(tm_output_stream)
 scheduler = sched.scheduler()
 
-my_process = Process(10, tm_distributor, scheduler, function_management=True, test=True)
+my_process = Process(10, tm_output_stream, scheduler, function_management=True, test=True)
 
 
 @my_process.action(interval=1)

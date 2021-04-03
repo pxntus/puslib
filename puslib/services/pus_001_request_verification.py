@@ -16,8 +16,8 @@ class _SubService(IntEnum):
 
 
 class RequestVerification(PusService):
-    def __init__(self, ident, tm_distributor):
-        super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_distributor=tm_distributor)
+    def __init__(self, ident, tm_output_stream):
+        super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_output_stream=tm_output_stream)
 
     def enqueue(self, tc_packet):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
@@ -70,4 +70,4 @@ class RequestVerification(PusService):
             time=time,
             data=payload
         )
-        self._tm_distributor.send(report)
+        self._tm_output_stream.write(report)

@@ -9,8 +9,8 @@ _FuncDef = namedtuple('FuncDef', ['callback', 'arg_types'])
 
 
 class FunctionManagement(PusService):
-    def __init__(self, ident, pus_service_1, tm_distributor):
-        super().__init__(PusServiceType.FUNCTION_MANAGEMENT, ident, pus_service_1, tm_distributor)
+    def __init__(self, ident, pus_service_1):
+        super().__init__(PusServiceType.FUNCTION_MANAGEMENT, ident, pus_service_1)
         super()._register_sub_service(1, self._perform)
         self._functions = {}
 
