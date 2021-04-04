@@ -28,6 +28,7 @@ class Parameter:
         if init_value:
             self._validate(init_value)
         self._value = init_value
+        self._events = []
 
     @property
     def value(self):
@@ -35,8 +36,14 @@ class Parameter:
 
     @value.setter
     def value(self, new_value):
+        if self._value == new_value:
+            return
         self._validate(new_value)
+        old_value = self._value
         self._value = new_value
+        if self._events:
+            for event in self._events:
+                event(old_value=old_value, new_value=self._value)
 
     @property
     def format(self):
@@ -45,6 +52,9 @@ class Parameter:
     @property
     def size(self):
         return struct.calcsize(self.format)
+
+    def subscribe(self, event_handler):
+        self._events.append(event_handler)
 
     def _validate(self, value):
         raise NotImplementedError
@@ -225,8 +235,8 @@ class OctetStringParameter(Parameter):
             raise TypeError("Bytes or bytearray expected")
 
     @property
-    def format(self):
-        return len(self.value) + 's'
+    def format(self, length_type_size):
+        return f"{length_type_size + len(self.value)}s"
 
     @classmethod
     def from_bytes(cls, bytes):
@@ -242,7 +252,7 @@ class AbsoluteTimeParameter(Parameter):
 
     @property
     def format(self):
-        return len(self.value) + 's'
+        return f"{len(self.value)}s"
 
     @classmethod
     def from_bytes(cls, bytes):
@@ -262,7 +272,7 @@ class PacketParameter(Parameter):
 
     @property
     def format(self):
-        return len(self.value) + 's'
+        return f"{len(self.value)}s"
 
     @classmethod
     def from_bytes(cls, bytes):
