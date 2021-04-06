@@ -10,7 +10,7 @@ __version__ = "0.1.0"
 
 from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
 from .time import CucTime  # noqa: E402
-from .parameter import UInt16Parameter  # noqa: E402
+from .parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
 
 
 class PusPolicy:
@@ -33,9 +33,19 @@ class PusPolicy:
     def PusTmPacket(self):
         return partial(PusTmPacket.create, has_type_counter_field=False, has_destination_field=False)
 
+    # Common PUS Service related types
+
+    @property
+    def FailureCodeType(self):
+        return UInt8Parameter
+
     @property
     def IdType(self):
         return UInt16Parameter
+
+    @property
+    def NType(self):
+        return UInt8Parameter
 
 
 _pus_policy = PusPolicy()

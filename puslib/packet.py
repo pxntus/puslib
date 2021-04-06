@@ -181,7 +181,7 @@ class CcsdsSpacePacket:
 
 
 class AckFlag(IntFlag):
-    NONE = 0xb0000
+    NONE = 0b0000
     ACCEPTANCE = 0b0001
     START_OF_EXECUTION = 0b0010
     PROGRESS = 0b0100

@@ -1,9 +1,6 @@
 import queue
 from enum import Enum
 
-from puslib.packet import AckFlag
-from .error_codes import CommonErrorCode
-
 
 class PusServiceType(bytes, Enum):
     def __new__(cls, service_number, description):
@@ -69,17 +66,15 @@ class PusService:
             ret = subservice_handler(tc_packet.app_data)
             if isinstance(ret, bool):
                 success = ret
-                pus_error_code = None if success else CommonErrorCode.ILLEGAL_APP_DATA.value
+                pus_error_code = None
             elif isinstance(ret, Enum):
                 success = False
                 pus_error_code = ret.value
             else:
                 raise TypeError("Must return a bool or an enum")
 
-            if tc_packet.ack(AckFlag.ACCEPTANCE):
-                self._pus_service_1.accept(tc_packet, code=pus_error_code, success=success)
-            if tc_packet.ack(AckFlag.COMPLETION):
-                self._pus_service_1.complete(tc_packet, code=pus_error_code, success=success)
+            self._pus_service_1.accept(tc_packet, success=success, code=pus_error_code)
+            self._pus_service_1.complete(tc_packet, success=success, code=pus_error_code)
 
     def update(self):
         pass

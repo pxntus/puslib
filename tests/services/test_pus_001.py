@@ -1,0 +1,92 @@
+import struct
+from functools import partial
+
+import pytest
+
+from puslib import get_pus_policy
+from puslib.ident import PusIdent
+from puslib.packet import PusTcPacket, AckFlag
+from puslib.services import RequestVerification
+from puslib.services.error_codes import CommonErrorCode
+from puslib.streams.buffer import QueuedOutput
+
+
+def unpack_payload(data):
+    request_id = struct.Struct('>HH')
+    failure_notice = struct.Struct(get_pus_policy().FailureCodeType().format)
+    if len(data) < request_id.size:
+        assert False, "Invalid payload length"
+
+    packet_id, packet_seq_ctrl = request_id.unpack(data[0:4])
+    apid = packet_id & 0x07ff
+    seq_count = packet_seq_ctrl & 0x3ff
+    if len(data) > request_id.size:
+        code = failure_notice.unpack_from(data, request_id.size)[0]
+        if len(data) > request_id.size + failure_notice.size:
+            extra_data = data[request_id.size + failure_notice.size:]
+    else:
+        code = None
+        extra_data = None
+    return apid, seq_count, code, extra_data
+
+
+@pytest.fixture
+def service_1_setup():
+    ident = PusIdent(apid=10)
+    tm_stream = QueuedOutput()
+    pus_service_1 = RequestVerification(ident, tm_stream)
+    TcPacket = partial(PusTcPacket.create, apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=8, service_subtype=1, payload=bytes.fromhex("0000"))
+    return pus_service_1, tm_stream, TcPacket
+
+
+def test_no_ackflags(service_1_setup):
+    pus_service_1, tm_stream, TcPacket = service_1_setup
+
+    packet = TcPacket()
+    pus_service_1.accept(packet)
+    pus_service_1.start(packet)
+    pus_service_1.progress(packet)
+    pus_service_1.complete(packet)
+    assert tm_stream.size == 0
+
+
+def test_multiple_ackflags(service_1_setup):
+    pus_service_1, tm_stream, TcPacket = service_1_setup
+
+    packet = TcPacket(ack_flags=AckFlag.ACCEPTANCE | AckFlag.START_OF_EXECUTION | AckFlag.PROGRESS | AckFlag.COMPLETION)
+    pus_service_1.accept(packet)
+    pus_service_1.start(packet)
+    pus_service_1.progress(packet)
+    pus_service_1.complete(packet)
+    assert tm_stream.size == 4
+
+
+def test_accept(service_1_setup):
+    pus_service_1, tm_stream, TcPacket = service_1_setup
+
+    packet = TcPacket(ack_flags=AckFlag.ACCEPTANCE)
+    pus_service_1.accept(packet)
+    assert tm_stream.size == 1
+    report = tm_stream.get()
+    assert report.service == 1
+    assert report.subservice == 1
+
+    apid, seq_count, code, extra_data = unpack_payload(report.source_data)
+    assert report.apid == apid
+    assert packet.name == seq_count
+    assert code is None
+    assert extra_data is None
+
+    failure_code = CommonErrorCode.ILLEGAL_APP_DATA
+    failure_extra_data = bytes.fromhex("abcd")
+    pus_service_1.accept(packet, success=False, failure_code=failure_code, failure_data=failure_extra_data)
+    assert tm_stream.size == 1
+    report = tm_stream.get()
+    assert report.service == 1
+    assert report.subservice == 2
+
+    apid, seq_count, code, extra_data = unpack_payload(report.source_data)
+    assert report.apid == apid
+    assert packet.name == seq_count
+    assert code == CommonErrorCode.ILLEGAL_APP_DATA.value
+    assert extra_data == failure_extra_data

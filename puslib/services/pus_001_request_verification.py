@@ -1,7 +1,9 @@
 from enum import IntEnum
 
 from puslib import get_pus_policy
+from puslib.packet import AckFlag
 from .service import PusService, PusServiceType
+from .error_codes import CommonErrorCode
 
 
 class _SubService(IntEnum):
@@ -25,42 +27,52 @@ class RequestVerification(PusService):
     def process(self):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
-    def accept(self, packet, code=None, success=True, failure_data=None):
+    def accept(self, packet, success=True, failure_code=None, failure_data=None):
+        if not packet.ack(AckFlag.ACCEPTANCE):
+            return
         self._generate_report(
             packet,
             _SubService.SUCCESSFUL_ACCEPTANCE_VERIFICATION if success else _SubService.FAILED_ACCEPTANCE_VERIFICATION,
-            code,
             success,
+            failure_code,
             failure_data)
 
-    def start(self, packet, code=None, success=True, failure_data=None):
+    def start(self, packet, success=True, failure_code=None, failure_data=None):
+        if not packet.ack(AckFlag.START_OF_EXECUTION):
+            return
         self._generate_report(
             packet,
             _SubService.SUCCESSFUL_START_OF_EXECUTION_VERIFICATION if success else _SubService.FAILED_START_OF_EXECUTION_VERIFICATION,
-            code,
             success,
+            failure_code,
             failure_data)
 
-    def progress(self, packet, code=None, success=True, failure_data=None):
+    def progress(self, packet, success=True, failure_code=None, failure_data=None):
+        if not packet.ack(AckFlag.PROGRESS):
+            return
         self._generate_report(
             packet,
             _SubService.SUCCESSFUL_PROGRESS_OF_EXECUTION_VERIFICATION if success else _SubService.FAILED_PROGRESS_OF_EXECUTION_VERIFICATION,
-            code,
             success,
+            failure_code,
             failure_data)
 
-    def complete(self, packet, code=None, success=True, failure_data=None):
+    def complete(self, packet, success=True, failure_code=None, failure_data=None):
+        if not packet.ack(AckFlag.COMPLETION):
+            return
         self._generate_report(
             packet,
             _SubService.SUCCESSFUL_COMPLETION_OF_EXECUTION_VERIFICATION if success else _SubService.FAILED_COMPLETION_OF_EXECUTION_VERIFICATION,
-            code,
             success,
+            failure_code,
             failure_data)
 
-    def _generate_report(self, packet, subservice, code, success, failure_data):
+    def _generate_report(self, packet, subservice, success, failure_code, failure_data):
+        if not success and not failure_code:
+            failure_code = CommonErrorCode.ILLEGAL_APP_DATA
         payload = packet.request_id()
         if not success:
-            payload += code.to_bytes(1, byteorder='big') + (failure_data if failure_data else b'')
+            payload += failure_code.value.to_bytes(get_pus_policy().FailureCodeType().size, byteorder='big') + (failure_data if failure_data else b'')
         time = get_pus_policy().CucTime()
         report = get_pus_policy().PusTmPacket(
             apid=self._ident.apid,
