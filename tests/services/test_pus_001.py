@@ -19,7 +19,7 @@ def unpack_payload(data):
 
     packet_id, packet_seq_ctrl = request_id.unpack(data[0:4])
     apid = packet_id & 0x07ff
-    seq_count = packet_seq_ctrl & 0x3ff
+    name = packet_seq_ctrl & 0x3ff
     if len(data) > request_id.size:
         code = failure_notice.unpack_from(data, request_id.size)[0]
         if len(data) > request_id.size + failure_notice.size:
@@ -27,7 +27,7 @@ def unpack_payload(data):
     else:
         code = None
         extra_data = None
-    return apid, seq_count, code, extra_data
+    return apid, name, code, extra_data
 
 
 @pytest.fixture
@@ -61,32 +61,50 @@ def test_multiple_ackflags(service_1_setup):
     assert tm_stream.size == 4
 
 
-def test_accept(service_1_setup):
+@pytest.mark.parametrize("service_1_setup, ack_flag, sub_service_success, sub_service_failure",
+    [
+        ("service_1_setup", AckFlag.ACCEPTANCE, 1, 2),
+        ("service_1_setup", AckFlag.START_OF_EXECUTION, 3, 4),
+        ("service_1_setup", AckFlag.PROGRESS, 5, 6),
+        ("service_1_setup", AckFlag.COMPLETION, 7, 8),
+    ],
+    indirect=["service_1_setup"],
+)
+def test_accept(service_1_setup, ack_flag, sub_service_success, sub_service_failure):
     pus_service_1, tm_stream, TcPacket = service_1_setup
 
-    packet = TcPacket(ack_flags=AckFlag.ACCEPTANCE)
-    pus_service_1.accept(packet)
+    if ack_flag == AckFlag.ACCEPTANCE:
+        pus1_func = partial(pus_service_1.accept)
+    elif ack_flag == AckFlag.START_OF_EXECUTION:
+        pus1_func = partial(pus_service_1.start)
+    elif ack_flag == AckFlag.PROGRESS:
+        pus1_func = partial(pus_service_1.progress)
+    elif ack_flag == AckFlag.COMPLETION:
+        pus1_func = partial(pus_service_1.complete)
+
+    packet = TcPacket(ack_flags=ack_flag)
+    pus1_func(packet)
     assert tm_stream.size == 1
     report = tm_stream.get()
     assert report.service == 1
-    assert report.subservice == 1
+    assert report.subservice == sub_service_success
 
-    apid, seq_count, code, extra_data = unpack_payload(report.source_data)
+    apid, name, code, extra_data = unpack_payload(report.source_data)
     assert report.apid == apid
-    assert packet.name == seq_count
+    assert packet.name == name
     assert code is None
     assert extra_data is None
 
     failure_code = CommonErrorCode.ILLEGAL_APP_DATA
     failure_extra_data = bytes.fromhex("abcd")
-    pus_service_1.accept(packet, success=False, failure_code=failure_code, failure_data=failure_extra_data)
+    pus1_func(packet, success=False, failure_code=failure_code, failure_data=failure_extra_data)
     assert tm_stream.size == 1
     report = tm_stream.get()
     assert report.service == 1
-    assert report.subservice == 2
+    assert report.subservice == sub_service_failure
 
-    apid, seq_count, code, extra_data = unpack_payload(report.source_data)
+    apid, name, code, extra_data = unpack_payload(report.source_data)
     assert report.apid == apid
-    assert packet.name == seq_count
+    assert packet.name == name
     assert code == CommonErrorCode.ILLEGAL_APP_DATA.value
     assert extra_data == failure_extra_data
