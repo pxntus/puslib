@@ -69,7 +69,7 @@ class PusService:
                 pus_error_code = None
             elif isinstance(ret, Enum):
                 success = False
-                pus_error_code = ret.value
+                pus_error_code = ret
             else:
                 raise TypeError("Must return a bool or an enum")
 

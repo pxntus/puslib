@@ -68,10 +68,10 @@ class RequestVerification(PusService):
             failure_data)
 
     def _generate_report(self, packet, subservice, success, failure_code, failure_data):
-        if not success and not failure_code:
-            failure_code = CommonErrorCode.ILLEGAL_APP_DATA
         payload = packet.request_id()
         if not success:
+            if not failure_code:
+                failure_code = CommonErrorCode.ILLEGAL_APP_DATA
             payload += failure_code.value.to_bytes(get_pus_policy().FailureCodeType().size, byteorder='big') + (failure_data if failure_data else b'')
         time = get_pus_policy().CucTime()
         report = get_pus_policy().PusTmPacket(

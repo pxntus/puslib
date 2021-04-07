@@ -35,7 +35,7 @@ def service_1_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
-    TcPacket = partial(PusTcPacket.create, apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=8, service_subtype=1, payload=bytes.fromhex("0000"))
+    TcPacket = partial(PusTcPacket.create, apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=8, service_subtype=1, data=bytes.fromhex("0000"))
     return pus_service_1, tm_stream, TcPacket
 
 
