@@ -73,8 +73,8 @@ class PusService:
             else:
                 raise TypeError("Must return a bool or an enum")
 
-            self._pus_service_1.accept(tc_packet, success=success, code=pus_error_code)
-            self._pus_service_1.complete(tc_packet, success=success, code=pus_error_code)
+            self._pus_service_1.accept(tc_packet, success=success, failure_code=pus_error_code)
+            self._pus_service_1.complete(tc_packet, success=success, failure_code=pus_error_code)
 
     def update(self):
         pass
