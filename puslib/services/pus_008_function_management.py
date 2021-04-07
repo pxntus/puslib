@@ -26,12 +26,16 @@ class FunctionManagement(PusService):
 
         args = []
         offset = fid.size
-        try:
-            for arg in func_def.arg_types:
-                p = arg.from_bytes(app_data[offset:])
-                args.append(p.value)
-                offset += p.size
-        except struct.error:
+        if func_def.arg_types:
+            try:
+                for arg in func_def.arg_types:
+                    p = arg.from_bytes(app_data[offset:])
+                    args.append(p.value)
+                    offset += p.size
+            except struct.error:
+                return CommonErrorCode.PUS8_INVALID_ARGS
+
+        if offset != len(app_data):
             return CommonErrorCode.PUS8_INVALID_ARGS
 
         return func_def.callback(*args)
