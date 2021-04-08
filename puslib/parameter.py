@@ -56,6 +56,9 @@ class Parameter:
     def subscribe(self, event_handler):
         self._events.append(event_handler)
 
+    def to_bytes(self):
+        return struct.pack(self.format, self.value)
+
     def _validate(self, value):
         raise NotImplementedError
 
@@ -83,148 +86,116 @@ class BoolParameter(Parameter):
         return cls(val)
 
 
-class _UnsignedIntegerParameter(Parameter):
+class _IntegerParameter(Parameter):
+    _value_size = None
+    _fmt = None
+    _signed = None
+
+    @property
+    def size(self):
+        return self._value_size
+
+    @property
+    def format(self):
+        return self._fmt
+
+    def to_bytes(self):
+        return self.value.to_bytes(self._value_size, byteorder='big', signed=self._signed)
+
+    @classmethod
+    def from_bytes(cls, bytes):
+        val = int.from_bytes(bytes[:cls._value_size], byteorder='big', signed=cls._signed)
+        return cls(val)
+
+
+class _UnsignedIntegerParameter(_IntegerParameter):
     _value_type = PacketFieldType.UInt
+    _signed = False
 
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not (0 <= value <= (2 ** (self.size * 8) - 1)):
+        if not (0 <= value <= (2 ** (self._value_size * 8) - 1)):
             raise ValueError
 
 
 class UInt8Parameter(_UnsignedIntegerParameter):
-    @property
-    def format(self):
-        return 'B'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[0], byteorder='big')
-        return cls(val)
+    _value_size = 1
+    _fmt = 'B'
 
 
 class UInt16Parameter(_UnsignedIntegerParameter):
-    @property
-    def format(self):
-        return '>H'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:2], byteorder='big')
-        return cls(val)
+    _value_size = 2
+    _fmt = '>H'
 
 
 class UInt32Parameter(_UnsignedIntegerParameter):
-    @property
-    def format(self):
-        return '>I'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:4], byteorder='big')
-        return cls(val)
+    _value_size = 4
+    _fmt = '>I'
 
 
 class UInt64Parameter(_UnsignedIntegerParameter):
-    @property
-    def format(self):
-        return '>Q'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:8], byteorder='big')
-        return cls(val)
+    _value_size = 8
+    _fmt = '>Q'
 
 
-class _SignedIntegerParameter(Parameter):
+class _SignedIntegerParameter(_IntegerParameter):
     _value_type = PacketFieldType.Int
+    _signed = True
 
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not ((-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self.size * 8 - 1) - 1)):
+        if not ((-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1)):
             raise ValueError
 
 
 class Int8Parameter(_SignedIntegerParameter):
-    @property
-    def format(self):
-        return 'b'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[0], byteorder='big', signed=True)
-        return cls(val)
+    _value_size = 1
+    _fmt = 'b'
 
 
 class Int16Parameter(_SignedIntegerParameter):
-    @property
-    def format(self):
-        return '>h'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:2], byteorder='big', signed=True)
-        return cls(val)
+    _value_size = 2
+    _fmt = '>h'
 
 
 class Int32Parameter(_SignedIntegerParameter):
-    @property
-    def format(self):
-        return '>i'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:4], byteorder='big', signed=True)
-        return cls(val)
+    _value_size = 4
+    _fmt = '>i'
 
 
 class Int64Parameter(_SignedIntegerParameter):
-    @property
-    def format(self):
-        return '>q'
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = int.from_bytes(bytes[:8], byteorder='big', signed=True)
-        return cls(val)
+    _value_size = 8
+    _fmt = '>q'
 
 
 class _RealParameter(Parameter):
     _value_type = PacketFieldType.Real
+    _fmt = None
+
+    @property
+    def format(self):
+        return self._fmt
 
     def _validate(self, value):
         if not isinstance(value, float):
             raise TypeError("Float expected")
+
+    @classmethod
+    def from_bytes(cls, bytes):
+        val = cls._struct.unpack(bytes)
+        return cls(val)
 
 
 class Real32Parameter(_RealParameter):
     _fmt = '>f'
     _struct = struct.Struct(_fmt)
 
-    @property
-    def format(self):
-        return self._fmt
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = cls._struct.unpack(bytes)
-        return cls(val)
-
 
 class Real64Parameter(_RealParameter):
     _fmt = '>d'
     _struct = struct.Struct(_fmt)
-
-    @property
-    def format(self):
-        return self._fmt
-
-    @classmethod
-    def from_bytes(cls, bytes):
-        val = cls._struct.unpack(bytes)
-        return cls(val)
 
 
 class OctetStringParameter(Parameter):
