@@ -24,6 +24,8 @@ class Process:
         self._tm_output_stream = tm_output_stream
         self._scheduler = scheduler
 
+        self._params = {}
+
         self._pus_services = {}
         self._pus_service_1 = services.RequestVerification(self._ident, tm_output_stream)
         self._pus_services[1] = self._pus_service_1
@@ -45,6 +47,9 @@ class Process:
     @property
     def apid(self):
         return self._ident.apid
+
+    def addparam(self, param_id, param):
+        self._params[param_id] = param
 
     def forward(self, tc_packet):
         if tc_packet.apid != self.apid:
