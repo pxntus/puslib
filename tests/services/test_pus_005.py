@@ -37,8 +37,7 @@ def test_manual_event(service_5_setup):
     assert report.service == 5
     assert report.subservice == Severity.INFO
     assert len(report.source_data) == get_pus_policy().IdType().size
-    id_param = get_pus_policy().IdType.from_bytes(report.source_data)
-    assert id_param.value == 0
+    assert get_pus_policy().IdType.from_bytes(report.source_data) == 0
 
     pus_service_5.dispatch(ev)
     assert tm_stream.size == 1
@@ -86,8 +85,7 @@ def test_trigger_events(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == Severity.INFO
-    id_param = get_pus_policy().IdType.from_bytes(report.source_data)
-    assert id_param.value == 3
+    assert get_pus_policy().IdType.from_bytes(report.source_data) == 3
     ev.disable()
     param1.value += 1
     assert tm_stream.size == 0
@@ -101,8 +99,7 @@ def test_trigger_events(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == Severity.LOW
-    id_param = get_pus_policy().IdType.from_bytes(report.source_data)
-    assert id_param.value == 5
+    assert get_pus_policy().IdType.from_bytes(report.source_data) == 5
 
     param3 = UInt32Parameter(0)
     pus_service_5.add(7, Severity.MEDIUM, None, enabled=True, trig_param=param3, to_value=1, from_value=2)
@@ -115,8 +112,7 @@ def test_trigger_events(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == Severity.MEDIUM
-    id_param = get_pus_policy().IdType.from_bytes(report.source_data)
-    assert id_param.value == 7
+    assert get_pus_policy().IdType.from_bytes(report.source_data) == 7
 
 
 def test_toggle_event(service_5_setup):
@@ -153,8 +149,7 @@ def test_disabled_event_report(service_5_setup):
     assert report.service == 5
     assert report.subservice == 8
     assert len(report.source_data) == get_pus_policy().NType().size
-    num_events_param = get_pus_policy().NType.from_bytes(report.source_data)
-    assert num_events_param.value == 0
+    assert get_pus_policy().NType.from_bytes(report.source_data) == 0
 
     ev1 = pus_service_5.add(1, Severity.INFO)
     ev2 = pus_service_5.add(2, Severity.LOW)

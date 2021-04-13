@@ -29,9 +29,8 @@ class FunctionManagement(PusService):
         if func_def.arg_types:
             try:
                 for arg in func_def.arg_types:
-                    p = arg.from_bytes(app_data[offset:])
-                    args.append(p.value)
-                    offset += p.size
+                    args.append(arg.from_bytes(app_data[offset:]))
+                    offset += arg().size
             except struct.error:
                 return CommonErrorCode.PUS8_INVALID_ARGS
 
