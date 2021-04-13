@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .exceptions import CrcException, IncompletePacketException, InvalidPacketException, TooSmallBufferException
 from .time import CucTime
-from .crc_ccitt import calculateb as crc_ccitt_calculate
+from .crc_ccitt import calculate as crc_ccitt_calculate
 
 CCSDS_PACKET_VERSION_NUMBER = 0
 CCSDS_MAX_PACKET_SIZE = 65542

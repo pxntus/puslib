@@ -10,5 +10,5 @@ from puslib import crc_ccitt
     (bytes.fromhex("ABCDEF01"), 0x04a2),
     (bytes.fromhex("1456F89A0001"), 0x7fd5)
 ])
-def test_calculateb(data, crc):
-    assert crc_ccitt.calculateb(data) == crc
+def test_calculate(data, crc):
+    assert crc_ccitt.calculate(data) == crc
