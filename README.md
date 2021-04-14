@@ -5,9 +5,11 @@
 This package is mainly intended for ground segment tools, e.g.:
 
 * data extraction and post-processing of telemetry.
+* simulators.
 * EGSE SW, and thus enabling the use of mission control systems for controling and monitoring of EGSE equipment.
-* Python based commanders in mission control systems (instead of esoteric languages like PLUTO)
-* mission-specific tools
+* enable Python based commanding for mission control systems and other PUS based systems.
+* mission-specific tools.
+* student projects.
 
 ## Basic Example
 
@@ -45,13 +47,14 @@ with open('telemetry.dump', 'rb') as f:
 * CCSDS Unsegmented Time Code (CUC) support
 * Policy handling of mission specific or implementation specific configurations
 * Simple abstraction of application processes
-* Streams for telemetry and telecommand access
+* Streams for telemetry and telecommand I/O access
 * PUS Services:
   * PUS 1: Request Verification
-  * PUS 3: Housekeeping
+  * PUS 3: Housekeeping (*partial support*)
   * PUS 5: Event Reporting
   * PUS 8: Function Management
-  * PUS 17: Test
+  * PUS 17: Test (*partial support*)
+  * PUS 20: On-board Parameter Management (*partial support*)
 
 ## Links
 
