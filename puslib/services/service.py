@@ -63,7 +63,7 @@ class PusService:
         while not self._incoming_tc_queue.empty():
             tc_packet = self._incoming_tc_queue.get()
             subservice_handler = self._subservices[tc_packet.subservice]
-            ret = subservice_handler(tc_packet.app_data)
+            ret = subservice_handler(app_data=tc_packet.app_data)
             if isinstance(ret, bool):
                 success = ret
                 pus_error_code = None

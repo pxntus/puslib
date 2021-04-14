@@ -54,8 +54,8 @@ class Report:
 class EventReporting(PusService):
     def __init__(self, ident, pus_service_1, tm_output_stream):
         super().__init__(PusServiceType.EVENT_REPORTING, ident, pus_service_1, tm_output_stream)
-        self._register_sub_service(5, self._enable)
-        self._register_sub_service(6, self._disable)
+        self._register_sub_service(5, partial(self._toggle, enable=True))
+        self._register_sub_service(6, partial(self._toggle, enable=False))
         self._register_sub_service(7, self._report_disabled_events)
         self._reports = {}
 
@@ -106,10 +106,10 @@ class EventReporting(PusService):
                 self.dispatch(report)
 
     def _toggle(self, app_data, enable=True):
-        num_ids = get_pus_policy().NType()
         try:
-            num_ids.value = struct.unpack(num_ids.format, app_data)
-            ids = struct.unpack(f">{num_ids.value}{get_pus_policy().IdType().format}", app_data[num_ids.size:])
+            num_ids = get_pus_policy().NType.from_bytes(app_data)
+            fmt = '>' + f"{num_ids}{get_pus_policy().IdType().format}".replace('>', '')
+            ids = struct.unpack(fmt, app_data[get_pus_policy().NType().size:])
         except struct.error:
             return False
         if not all(eid in self._reports for eid in ids):
@@ -121,12 +121,6 @@ class EventReporting(PusService):
                 else:
                     self._reports[eid].disable()
         return True
-
-    def _enable(self, app_data):
-        return self._toggle(app_data)
-
-    def _disable(self, app_data):
-        return self._toggle(app_data, enable=False)
 
     def _report_disabled_events(self, app_data):
         if app_data is not None:

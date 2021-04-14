@@ -116,7 +116,7 @@ def test_trigger_events(service_5_setup):
 
 
 def test_toggle_event(service_5_setup):
-    pus_service_5, tm_stream, _ = service_5_setup
+    pus_service_5, tm_stream, ident = service_5_setup
 
     ev1 = pus_service_5.add(0, Severity.INFO)
     ev2 = pus_service_5.add(1, Severity.LOW, params_in_report=None, enabled=False)
@@ -135,6 +135,25 @@ def test_toggle_event(service_5_setup):
     assert not ev1.enabled
     assert ev2.enabled
     assert not ev3.enabled
+    assert ev4.enabled
+
+    app_data = get_pus_policy().NType(1).to_bytes() + get_pus_policy().IdType(0).to_bytes()
+    packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=5, data=app_data)
+    pus_service_5.enqueue(packet)
+    pus_service_5.process()
+    assert ev1.enabled
+
+    app_data = get_pus_policy().NType(1).to_bytes() + get_pus_policy().IdType(1).to_bytes()
+    packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=6, data=app_data)
+    pus_service_5.enqueue(packet)
+    pus_service_5.process()
+    assert not ev2.enabled
+
+    app_data = get_pus_policy().NType(2).to_bytes() + get_pus_policy().IdType(2).to_bytes() + get_pus_policy().IdType(3).to_bytes()
+    packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=5, data=app_data)
+    pus_service_5.enqueue(packet)
+    pus_service_5.process()
+    assert ev3.enabled
     assert ev4.enabled
 
 
