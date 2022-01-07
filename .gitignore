@@ -1,8 +1,10 @@
+.pytest_cache/
 .vscode
+.VSCodeCounter
 __pycache__/
 prototyping/
-.pytest_cache/
 .env
 .venv
 env/
 venv/
+TODO.txt
