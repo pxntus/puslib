@@ -21,9 +21,16 @@ class ParamReport:
 
         fmt = get_pus_policy().IdType().format
         if params_in_report:
-            fmt += "".join([p.format for p in params_in_report])
+            fmt += "".join([p.format for p in params_in_report.values()])
         fmt = '>' + fmt.replace('>', '')
         self._cached_struct = struct.Struct(fmt)
+
+    def __len__(self):
+        return len(self._params)
+
+    def __iter__(self):
+        for param_id, param in self._params.items():
+            yield param_id, param
 
     @property
     def id(self):
@@ -36,7 +43,7 @@ class ParamReport:
     def to_bytes(self):
         args = [self._id]
         if self._params:
-            args.extend([p.value for p in self._params])
+            args.extend([p.value for p in self._params.values()])
         return self._cached_struct.pack(*args)
 
     def enable(self):

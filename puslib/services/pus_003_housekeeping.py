@@ -51,6 +51,37 @@ class Housekeeping(PusService):
         reports[sid] = report
         return report
 
+    @staticmethod
+    def create_parameter_report(apid, seq_count, report, diagnostic=False):
+        app_data = report.to_bytes()
+        packet = get_pus_policy().PusTmPacket(
+            apid=apid,
+            seq_count=seq_count,
+            service_type=PusServiceType.HOUSEKEEPING.value,
+            service_subtype=26 if diagnostic else 25,
+            time=get_pus_policy().CucTime(),
+            data=app_data
+        )
+        return packet
+
+    @staticmethod
+    def create_structure_report(apid, seq_count, report, diagnostic=False):
+        app_data = get_pus_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
+            get_pus_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes() + \
+            get_pus_policy().housekeeping.count_type(len(report)).to_bytes()
+        for pid, _ in report:
+            app_data += get_pus_policy().common.param_id_type(pid).to_bytes()
+        app_data += get_pus_policy().housekeeping.count_type(0).to_bytes()
+        packet = get_pus_policy().PusTmPacket(
+            apid=apid,
+            seq_count=seq_count,
+            service_type=PusServiceType.HOUSEKEEPING.value,
+            service_subtype=12 if diagnostic else 10,
+            time=get_pus_policy().CucTime(),
+            data=app_data
+        )
+        return packet
+
     def _create_report(self, app_data, diagnostic=False):
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
 
@@ -73,7 +104,6 @@ class Housekeeping(PusService):
             # parse parameter IDs
             param_id_dummy = get_pus_policy().common.param_id_type()
             fmt = ">" + f"{n1.value}{param_id_dummy.format}".replace('>', '')
-            test = len(app_data)
             param_ids = struct.unpack(fmt, app_data[offset:offset + struct.calcsize(fmt)])
             if len(param_ids) != len(set(param_ids)):
                 return CommonErrorCode.PUS3_PARAM_DUPLICATION  # ECSS-E-ST-70-41C, 6.3.3.5.1.d.2
@@ -86,11 +116,11 @@ class Housekeeping(PusService):
             if nfa.value != 0:
                 raise NotImplementedError  # super commutated parameters is not supported
 
-            params = [self._params[param_id] for param_id in param_ids]
+            params = {param_id: self._params[param_id] for param_id in param_ids}
             reports[sid.value] = Report(sid=sid.value, collection_interval=collection_interval.value, enabled=False, params_in_report=params)
             return True
 
-        except struct.error as e:
+        except struct.error:
             return CommonErrorCode.INCOMPLETE
 
     def _for_each_report_id(self, app_data, diagnostic, operation, *argv):
@@ -142,10 +172,20 @@ class Housekeeping(PusService):
         return self._for_each_report_id(app_data, diagnostic, operation, enable)
 
     def _request_report_structures(self, app_data, diagnostic=False):
-        raise NotImplementedError
+        def operation(report_id, reports):
+            report = reports[report_id]
+            packet = Housekeeping.create_structure_report(self._ident.apid, self._ident.seq_count(), report, diagnostic)
+            self._tm_output_stream.write(packet)
+
+        return self._for_each_report_id(app_data, diagnostic, operation)
 
     def _request_reports(self, app_data, diagnostic=False):
-        raise NotImplementedError
+        def operation(report_id, reports):
+            report = reports[report_id]
+            packet = Housekeeping.create_parameter_report(self._ident.apid, self._ident.seq_count(), report, diagnostic)
+            self._tm_output_stream.write(packet)
+
+        return self._for_each_report_id(app_data, diagnostic, operation)
 
     def _append_report(self, app_data, diagnostic=False):
         raise NotImplementedError

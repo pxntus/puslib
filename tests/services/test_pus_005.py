@@ -1,4 +1,5 @@
 import struct
+from collections import OrderedDict
 
 import pytest
 
@@ -59,7 +60,11 @@ def test_event_with_data(service_5_setup):
     param1 = UInt32Parameter(4)
     param2 = UInt16Parameter(5)
     param3 = UInt64Parameter(6)
-    ev = pus_service_5.add(3, Severity.INFO, params_in_report=[param1, param2, param3])
+    params = OrderedDict()
+    params[0] = param1
+    params[1] = param2
+    params[2] = param3
+    ev = pus_service_5.add(3, Severity.INFO, params_in_report=params)
 
     pus_service_5.dispatch(ev)
     assert tm_stream.size == 1
