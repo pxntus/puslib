@@ -3,6 +3,7 @@ from functools import partial
 from enum import IntEnum
 
 from .service import PusService, PusServiceType
+from .param_report import ParamReport
 from puslib import get_pus_policy
 
 
@@ -13,42 +14,14 @@ class Severity(IntEnum):
     HIGH = 4
 
 
-class Report:
+class Report(ParamReport):
     def __init__(self, eid, severity, enabled=True, params_in_report=None):
-        self._id = eid
+        super().__init__(eid, enabled, params_in_report)
         self._severity = severity
-        self._params = params_in_report
-        self._enabled = enabled
-
-        fmt = get_pus_policy().IdType().format
-        if params_in_report:
-            fmt += "".join([p.format for p in params_in_report])
-        fmt = '>' + fmt.replace('>', '')
-        self._cached_struct = struct.Struct(fmt)
-
-    @property
-    def id(self):
-        return self._id
 
     @property
     def severity(self):
         return self._severity
-
-    @property
-    def enabled(self):
-        return self._enabled
-
-    def to_bytes(self):
-        args = [self._id]
-        if self._params:
-            args.extend([p.value for p in self._params])
-        return self._cached_struct.pack(*args)
-
-    def enable(self):
-        self._enabled = True
-
-    def disable(self):
-        self._enabled = False
 
 
 class EventReporting(PusService):

@@ -13,7 +13,7 @@ from puslib.streams.buffer import QueuedOutput
 
 def unpack_payload(data):
     request_id = struct.Struct('>HH')
-    failure_notice = struct.Struct(get_pus_policy().FailureCodeType().format)
+    failure_notice = struct.Struct(get_pus_policy().request_verification.failure_code_type().format)
     if len(data) < request_id.size:
         assert False, "Invalid payload length"
 

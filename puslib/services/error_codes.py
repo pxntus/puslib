@@ -15,6 +15,9 @@ class CommonErrorCode(bytes, Enum):
     ILLEGAL_PACKET_SUBTYPE = (4, "Illegal packet subtype")
     ILLEGAL_APP_DATA = (5, "Illegal or inconsistent application data")
 
+    PUS3_SID_ALREADY_PRESENT = (30, "Structure ID already exist")
+    PUS3_PARAM_DUPLICATION = (31, "Same parameter is identified more than once in request")
+
     PUS8_INVALID_FID = (80, "Invalid function ID")
     PUS8_FUNCTION_NOT_IMPLEMENTED = (81, "Function not implemented")
     PUS8_INVALID_ARGS = (82, "Invalid function arguments")
