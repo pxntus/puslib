@@ -19,6 +19,8 @@ class PusPolicy:
         self.common = self.Common
         self.request_verification = self.RequestVerification
         self.housekeeping = self.Housekeeping
+        self.event_reporting = self.EventReporting
+        self.function_management = self.FunctionManagement
 
     @property
     def CucTime(self):
@@ -31,16 +33,6 @@ class PusPolicy:
     @property
     def PusTmPacket(self):
         return partial(PusTmPacket.create, has_type_counter_field=False, has_destination_field=False)
-
-    # Common PUS Service related types
-
-    @property
-    def IdType(self):
-        return UInt16Parameter
-
-    @property
-    def NType(self):
-        return UInt8Parameter
 
     @dataclass
     class Common:
@@ -59,6 +51,15 @@ class PusPolicy:
         count_type = UInt16Parameter
         periodic_generation_action_status_type = UInt8Parameter  # TM[3,35] & TM[3,36]
 
+    @dataclass
+    class EventReporting:
+        event_definition_id_type = UInt16Parameter
+        count_type = UInt8Parameter
+
+    @dataclass
+    class FunctionManagement:
+        function_id_type = UInt16Parameter
+        count_type = UInt8Parameter
 
 _pus_policy = PusPolicy()
 

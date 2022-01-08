@@ -12,8 +12,8 @@ class ParameterManagement(PusService):
         self._params = params
 
     def _report_parameter_values(self, app_data):
-        num_ids = get_pus_policy().NType()
-        param_id_dummy = get_pus_policy().IdType()
+        num_ids = get_pus_policy().function_management.count_type()
+        param_id_dummy = get_pus_policy().common.param_id_type()
         try:
             num_ids.value = num_ids.from_bytes(app_data)
             fmt = ">" + f"{num_ids.value}{param_id_dummy.format}".replace('>', '')
@@ -42,12 +42,12 @@ class ParameterManagement(PusService):
 
     def _set_parameter_values(self, app_data):
         try:
-            num_values = get_pus_policy().NType().from_bytes(app_data)
+            num_values = get_pus_policy().function_management.count_type().from_bytes(app_data)
             new_values = {}
-            offset = get_pus_policy().NType().size
+            offset = get_pus_policy().function_management.count_type().size
             for _ in range(num_values):
-                param_id = get_pus_policy().IdType().from_bytes(app_data[offset:])
-                offset += get_pus_policy().IdType().size
+                param_id = get_pus_policy().common.param_id_type().from_bytes(app_data[offset:])
+                offset += get_pus_policy().common.param_id_type().size
                 if param_id not in self._params or param_id in new_values:
                     return False
                 param = self._params[param_id]

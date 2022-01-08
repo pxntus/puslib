@@ -80,9 +80,11 @@ class EventReporting(PusService):
 
     def _toggle(self, app_data, enable=True):
         try:
-            num_ids = get_pus_policy().NType.from_bytes(app_data)
-            fmt = '>' + f"{num_ids}{get_pus_policy().IdType().format}".replace('>', '')
-            ids = struct.unpack(fmt, app_data[get_pus_policy().NType().size:])
+            num_ids = get_pus_policy().event_reporting.count_type(
+                get_pus_policy().event_reporting.count_type.from_bytes(app_data)
+            )
+            fmt = '>' + f"{num_ids.value}{get_pus_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
+            ids = struct.unpack(fmt, app_data[num_ids.size:])
         except struct.error:
             return False
         if not all(eid in self._reports for eid in ids):
@@ -100,8 +102,8 @@ class EventReporting(PusService):
             return False
         time = get_pus_policy().CucTime()
         disabled_ids = [report.id for eid, report in self._reports.items() if not report.enabled]
-        num_ids = get_pus_policy().NType(len(disabled_ids))
-        fmt = ">" + f"{num_ids.format}{num_ids.value}{get_pus_policy().IdType().format}".replace('>', '')
+        num_ids = get_pus_policy().event_reporting.count_type(len(disabled_ids))
+        fmt = ">" + f"{num_ids.format}{num_ids.value}{get_pus_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
         payload = struct.pack(fmt, num_ids.value, *disabled_ids)
         packet = get_pus_policy().PusTmPacket(
             apid=self._ident.apid,
