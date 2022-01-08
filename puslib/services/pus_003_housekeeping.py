@@ -1,5 +1,6 @@
 import struct
 from functools import partial
+from collections import OrderedDict
 
 from .service import PusService, PusServiceType
 from .param_report import ParamReport
@@ -16,6 +17,10 @@ class Report(ParamReport):
     def collection_interval(self):
         return self._collection_interval
 
+    @collection_interval.setter
+    def collection_interval(self, new_value):
+        self._collection_interval = new_value
+
 
 class Housekeeping(PusService):
     def __init__(self, ident, pus_service_1, tm_output_stream, params):
@@ -23,8 +28,8 @@ class Housekeeping(PusService):
         self._params = params
         self._housekeeping_reports = {}
         self._diagnostic_reports = {}
-        self._register_sub_service(1, partial(self._create_report, diagnostic=False))
-        self._register_sub_service(2, partial(self._create_report, diagnostic=True))
+        self._register_sub_service(1, partial(self._create_or_append_report, append=False, diagnostic=False))
+        self._register_sub_service(2, partial(self._create_or_append_report, append=False, diagnostic=True))
         self._register_sub_service(3, partial(self._delete_reports, diagnostic=False))
         self._register_sub_service(4, partial(self._delete_reports, diagnostic=True))
         self._register_sub_service(5, partial(self._toggle_reports, diagnostic=False, enable=True))
@@ -35,8 +40,8 @@ class Housekeeping(PusService):
         self._register_sub_service(11, partial(self._request_report_structures, diagnostic=True))
         self._register_sub_service(27, partial(self._request_reports, diagnostic=False))
         self._register_sub_service(28, partial(self._request_reports, diagnostic=True))
-        self._register_sub_service(29, partial(self._append_report, diagnostic=False))
-        self._register_sub_service(30, partial(self._append_report, diagnostic=True))
+        self._register_sub_service(29, partial(self._create_or_append_report, append=True, diagnostic=False))
+        self._register_sub_service(30, partial(self._create_or_append_report, append=True, diagnostic=True))
         self._register_sub_service(31, partial(self._modify_report_intervals, diagnostic=False))
         self._register_sub_service(32, partial(self._modify_report_intervals, diagnostic=True))
         self._register_sub_service(33, partial(self._request_interval_properties, diagnostic=False))
@@ -82,19 +87,43 @@ class Housekeeping(PusService):
         )
         return packet
 
-    def _create_report(self, app_data, diagnostic=False):
+    @staticmethod
+    def create_periodic_generation_properties_report(apid, seq_count, reports_to_report, diagnostic=False):
+        app_data = get_pus_policy().housekeeping.count_type(len(reports_to_report)).to_bytes()
+        for report in reports_to_report:
+            app_data += get_pus_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
+                get_pus_policy().housekeeping.periodic_generation_action_status_type(1 if report.enabled else 0).to_bytes() + \
+                get_pus_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes()
+        packet = get_pus_policy().PusTmPacket(
+            apid=apid,
+            seq_count=seq_count,
+            service_type=PusServiceType.HOUSEKEEPING.value,
+            service_subtype=36 if diagnostic else 35,
+            time=get_pus_policy().CucTime(),
+            data=app_data
+        )
+        return packet
+
+    def _create_or_append_report(self, app_data, append=False, diagnostic=False):
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
 
         try:
             sid = get_pus_policy().housekeeping.structure_id_type()
             sid.value = sid.from_bytes(app_data)
-            if sid.value in reports:
-                return CommonErrorCode.PUS3_SID_ALREADY_PRESENT  # ECSS-E-ST-70-41C, 6.3.3.5.1.d.1
+            if append:
+                if sid.value not in reports:
+                    return CommonErrorCode.PUS3_SID_NOT_PRESENT
+                if reports[sid.value].enabled:
+                    return CommonErrorCode.PUS3_CANNOT_MODIFY_ENABLED_REPORT
+            else:
+                if sid.value in reports:
+                    return CommonErrorCode.PUS3_SID_ALREADY_PRESENT
             offset = sid.size
 
-            collection_interval = get_pus_policy().housekeeping.collection_interval_type()
-            collection_interval.value = collection_interval.from_bytes(app_data[offset:])
-            offset += collection_interval.size
+            if not append:
+                collection_interval = get_pus_policy().housekeeping.collection_interval_type()
+                collection_interval.value = collection_interval.from_bytes(app_data[offset:])
+                offset += collection_interval.size
 
             # parse number of parameters in the report definition
             n1 = get_pus_policy().housekeeping.count_type()
@@ -106,7 +135,7 @@ class Housekeeping(PusService):
             fmt = ">" + f"{n1.value}{param_id_dummy.format}".replace('>', '')
             param_ids = struct.unpack(fmt, app_data[offset:offset + struct.calcsize(fmt)])
             if len(param_ids) != len(set(param_ids)):
-                return CommonErrorCode.PUS3_PARAM_DUPLICATION  # ECSS-E-ST-70-41C, 6.3.3.5.1.d.2
+                return CommonErrorCode.PUS3_PARAM_DUPLICATION
             param_ids = [param_id for param_id in param_ids if param_id in self._params]
             offset += struct.calcsize(fmt)
 
@@ -116,8 +145,11 @@ class Housekeeping(PusService):
             if nfa.value != 0:
                 raise NotImplementedError  # super commutated parameters is not supported
 
-            params = {param_id: self._params[param_id] for param_id in param_ids}
-            reports[sid.value] = Report(sid=sid.value, collection_interval=collection_interval.value, enabled=False, params_in_report=params)
+            params = OrderedDict([(param_id, self._params[param_id]) for param_id in param_ids])
+            if append:
+                reports[sid.value].append(params)
+            else:
+                reports[sid.value] = Report(sid=sid.value, collection_interval=collection_interval.value, enabled=False, params_in_report=params)
             return True
 
         except struct.error:
@@ -134,7 +166,6 @@ class Housekeeping(PusService):
 
         where N is the number of report IDs in the request.
         """
-        reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
         try:
             # parse number of parameters in the report definition
             num_reports = get_pus_policy().housekeeping.count_type()
@@ -146,6 +177,7 @@ class Housekeeping(PusService):
             fmt = ">" + f"{num_reports.value}{report_id_dummy.format}".replace('>', '')
             report_ids = struct.unpack(fmt, app_data[offset:])
 
+            reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
             for report_id in report_ids:
                 if report_id in reports:
                     operation(report_id, reports, *argv)
@@ -187,11 +219,44 @@ class Housekeeping(PusService):
 
         return self._for_each_report_id(app_data, diagnostic, operation)
 
-    def _append_report(self, app_data, diagnostic=False):
-        raise NotImplementedError
-
     def _modify_report_intervals(self, app_data, diagnostic=False):
-        raise NotImplementedError
+        reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
+        try:
+            n = get_pus_policy().housekeeping.count_type()
+            n.value = n.from_bytes(app_data)
+            offset = n.size
+            for _ in range(n.value):
+                sid = get_pus_policy().housekeeping.structure_id_type()
+                sid.value = sid.from_bytes(app_data[offset:])
+                offset += sid.size
+                collection_interval = get_pus_policy().housekeeping.collection_interval_type()
+                collection_interval.value = collection_interval.from_bytes(app_data[offset:])
+
+                if sid in reports:
+                    reports[sid].collection_interval = collection_interval.value
+
+            return True
+
+        except struct.error:
+            return CommonErrorCode.INCOMPLETE
 
     def _request_interval_properties(self, app_data, diagnostic=False):
-        raise NotImplementedError
+        try:
+            # parse number of parameters in the report definition
+            num_reports = get_pus_policy().housekeeping.count_type()
+            num_reports.value = num_reports.from_bytes(app_data)
+            offset = num_reports.size
+
+            # parse report IDs
+            report_id_dummy = get_pus_policy().housekeeping.structure_id_type()
+            fmt = ">" + f"{num_reports.value}{report_id_dummy.format}".replace('>', '')
+            report_ids = struct.unpack(fmt, app_data[offset:])
+
+            reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
+            reports_to_report = [reports[sid] for sid in report_ids if sid in reports]
+            packet = Housekeeping.create_periodic_generation_properties_report(self._ident.apid, self._ident.seq_count(), reports_to_report, diagnostic)
+            self._tm_output_stream.write(packet)
+            return True
+
+        except struct.error:
+            return CommonErrorCode.INCOMPLETE

@@ -1,4 +1,5 @@
 import struct
+from collections import OrderedDict
 
 from puslib import get_pus_policy
 
@@ -16,14 +17,10 @@ class ParamReport:
     """
     def __init__(self, sid, enabled=True, params_in_report=None):
         self._id = sid
-        self._params = params_in_report
+        self._params = OrderedDict()
         self._enabled = enabled
-
-        fmt = get_pus_policy().IdType().format
-        if params_in_report:
-            fmt += "".join([p.format for p in params_in_report.values()])
-        fmt = '>' + fmt.replace('>', '')
-        self._cached_struct = struct.Struct(fmt)
+        self._cached_struct = None
+        self.append(params_in_report)
 
     def __len__(self):
         return len(self._params)
@@ -39,6 +36,16 @@ class ParamReport:
     @property
     def enabled(self):
         return self._enabled
+
+    def append(self, params):
+        if params is not None:
+            self._params = {**self._params, **params}
+
+        fmt = get_pus_policy().common.param_id_type().format
+        if len(self._params) > 0:
+            fmt += "".join([p.format for p in self._params.values()])
+            fmt = '>' + fmt.replace('>', '')
+        self._cached_struct = struct.Struct(fmt)
 
     def to_bytes(self):
         args = [self._id]

@@ -57,6 +57,7 @@ class PusPolicy:
         structure_id_type = UInt16Parameter
         collection_interval_type = UInt16Parameter
         count_type = UInt16Parameter
+        periodic_generation_action_status_type = UInt8Parameter  # TM[3,35] & TM[3,36]
 
 
 _pus_policy = PusPolicy()
