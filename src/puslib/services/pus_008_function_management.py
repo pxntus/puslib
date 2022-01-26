@@ -1,7 +1,7 @@
 import struct
 from collections import namedtuple
 
-from puslib import get_pus_policy
+from .. import get_pus_policy
 from .service import PusService, PusServiceType
 from .error_codes import CommonErrorCode
 

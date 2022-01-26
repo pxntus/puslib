@@ -1,7 +1,7 @@
 import struct
 from collections import OrderedDict
 
-from puslib import get_pus_policy
+from .. import get_pus_policy
 
 
 class ParamReport:

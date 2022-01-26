@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from puslib import get_pus_policy
+from .. import get_pus_policy
 from .stream import InputStream
 
 

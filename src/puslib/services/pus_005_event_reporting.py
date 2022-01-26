@@ -4,7 +4,7 @@ from enum import IntEnum
 
 from .service import PusService, PusServiceType
 from .param_report import ParamReport
-from puslib import get_pus_policy
+from .. import get_pus_policy
 
 
 class Severity(IntEnum):

@@ -1,6 +1,6 @@
 import struct
 
-from puslib import get_pus_policy
+from .. import get_pus_policy
 from .service import PusService, PusServiceType
 
 

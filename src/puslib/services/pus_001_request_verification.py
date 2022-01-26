@@ -1,7 +1,7 @@
 from enum import IntEnum
 
-from puslib import get_pus_policy
-from puslib.packet import AckFlag
+from .. import get_pus_policy
+from ..packet import AckFlag
 from .service import PusService, PusServiceType
 from .error_codes import CommonErrorCode
 
