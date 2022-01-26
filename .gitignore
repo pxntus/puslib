@@ -7,4 +7,8 @@ prototyping/
 .venv
 env/
 venv/
+.tox/
+*.egg
+*.egg-info/
+dist/
 TODO.txt
