@@ -11,6 +11,14 @@ This package is mainly intended for ground segment tools, e.g.:
 * mission-specific tools.
 * student projects.
 
+## Install
+
+```Shell
+pip install puslib
+```
+
+Python 3.7 or later is required.
+
 ## Basic Example
 
 ```Python
