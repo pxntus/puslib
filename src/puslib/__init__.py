@@ -2,16 +2,15 @@ import sys
 from functools import partial
 from dataclasses import dataclass
 
+from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
+from .time import CucTime  # noqa: E402
+from .parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
+
 _MIN_PYTHON = (3, 7)
 if sys.version_info < _MIN_PYTHON:
     sys.exit(f"Python {_MIN_PYTHON[0]}.{_MIN_PYTHON[1]} or later is required.\n", 1)
 
 __version__ = "0.1.0"
-
-
-from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
-from .time import CucTime  # noqa: E402
-from .parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
 
 
 class PusPolicy:
@@ -62,13 +61,13 @@ class PusPolicy:
         count_type = UInt8Parameter
 
 
-_pus_policy = PusPolicy()
+_PUS_POLICY = PusPolicy()
 
 
 def set_pus_policy(policy):
-    global _pus_policy
-    _pus_policy = policy
+    global _PUS_POLICY
+    _PUS_POLICY = policy
 
 
 def get_pus_policy():
-    return _pus_policy
+    return _PUS_POLICY

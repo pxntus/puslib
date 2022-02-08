@@ -7,18 +7,18 @@ from .packet import PusTcPacket
 
 
 class PacketFieldType(IntEnum):
-    Boolean = 1
-    Enumerated = 2
-    UInt = 3
-    Int = 4
-    Real = 5
-    BitString = 6
-    OctetString = 7
-    String = 8
-    AbsoluteTime = 9
-    RelativeTime = 10
-    Deducted = 11
-    Packet = 12
+    BOOLEAN = 1
+    ENUMERATED = 2
+    UINT = 3
+    INT = 4
+    REAL = 5
+    BIT_STRING = 6
+    OCTET_STRING = 7
+    STRING = 8
+    ABSOLUTE_TIME = 9
+    RELATIVE_TIME = 10
+    DEDUCTED = 11
+    PACKET = 12
 
 
 class _Parameter:
@@ -73,7 +73,7 @@ class _Parameter:
 
 
 class BoolParameter(_Parameter):
-    _type_code = PacketFieldType.Boolean
+    _type_code = PacketFieldType.BOOLEAN
     _fmt = '>?'
     _struct = struct.Struct(_fmt)
 
@@ -93,12 +93,12 @@ class BoolParameter(_Parameter):
             raise TypeError("Boolean expected")
 
     @classmethod
-    def from_bytes(cls, bytes):
-        return cls._struct.unpack(bytes)[0]
+    def from_bytes(cls, buffer):
+        return cls._struct.unpack(buffer)[0]
 
 
 class EnumParameter(_Parameter):
-    _type_code = PacketFieldType.Enumerated
+    _type_code = PacketFieldType.ENUMERATED
 
     def __init__(self, init_value=0, bitsize=8):
         super().__init__(format_code=bitsize, init_value=init_value)
@@ -115,13 +115,13 @@ class EnumParameter(_Parameter):
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not (0 <= value <= (2 ** self._format_code - 1)):
+        if not 0 <= value <= (2 ** self._format_code - 1):
             raise ValueError
 
     @classmethod
-    def from_bytes(cls, bytes, bitsize):
+    def from_bytes(cls, buffer, bitsize):
         value_size = bitsize // 8 + (1 if bitsize % 8 != 0 else 0)
-        return int.from_bytes(bytes[:value_size], byteorder='big')
+        return int.from_bytes(buffer[:value_size], byteorder='big')
 
 
 class NumericParameter(_Parameter):
@@ -144,18 +144,18 @@ class _IntegerParameter(NumericParameter):
         return self.value.to_bytes(self._value_size, byteorder='big', signed=self._signed)
 
     @classmethod
-    def from_bytes(cls, bytes):
-        return int.from_bytes(bytes[:cls._value_size], byteorder='big', signed=cls._signed)
+    def from_bytes(cls, buffer):
+        return int.from_bytes(buffer[:cls._value_size], byteorder='big', signed=cls._signed)
 
 
 class _UnsignedIntegerParameter(_IntegerParameter):
-    _type_code = PacketFieldType.UInt
+    _type_code = PacketFieldType.UINT
     _signed = False
 
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not (0 <= value <= (2 ** (self._value_size * 8) - 1)):
+        if not 0 <= value <= (2 ** (self._value_size * 8) - 1):
             raise ValueError
 
 
@@ -192,13 +192,13 @@ class UInt64Parameter(_UnsignedIntegerParameter):
 
 
 class _SignedIntegerParameter(_IntegerParameter):
-    _type_code = PacketFieldType.Int
+    _type_code = PacketFieldType.INT
     _signed = True
 
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not ((-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1)):
+        if not (-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
             raise ValueError
 
 
@@ -235,16 +235,17 @@ class Int64Parameter(_SignedIntegerParameter):
 
 
 class _RealParameter(NumericParameter):
-    _type_code = PacketFieldType.Real
+    _type_code = PacketFieldType.REAL
     _fmt = None
+    _struct = None
 
     def _validate(self, value):
         if not isinstance(value, float):
             raise TypeError("Float expected")
 
     @classmethod
-    def from_bytes(cls, bytes):
-        return cls._struct.unpack(bytes)[0]
+    def from_bytes(cls, buffer):
+        return cls._struct.unpack(buffer)[0]
 
 
 class Real32Parameter(_RealParameter):
@@ -270,7 +271,7 @@ class ArrayParameter(_Parameter):
 
 
 class OctetStringParameter(ArrayParameter):
-    _type_code = PacketFieldType.OctetString
+    _type_code = PacketFieldType.OCTET_STRING
 
     def __init__(self, init_value=None):
         super().__init__(format_code=0, init_value=init_value)
@@ -288,7 +289,7 @@ class OctetStringParameter(ArrayParameter):
             raise TypeError("Bytes or bytearray expected")
 
     @classmethod
-    def from_bytes(cls, bytes):
+    def from_bytes(cls, buffer):
         raise NotImplementedError
 
 
@@ -305,20 +306,20 @@ class TimeParameter(_Parameter):
             raise TypeError("CucTime expected")
 
     @classmethod
-    def from_bytes(cls, bytes):
+    def from_bytes(cls, buffer):
         raise NotImplementedError
 
 
 class AbsoluteTimeParameter(TimeParameter):
-    _type_code = PacketFieldType.AbsoluteTime
+    _type_code = PacketFieldType.ABSOLUTE_TIME
 
 
 class RelativeTimeParameter(TimeParameter):
-    _type_code = PacketFieldType.RelativeTime
+    _type_code = PacketFieldType.RELATIVE_TIME
 
 
 class PacketParameter(_Parameter):
-    _type_code = PacketFieldType.Packet
+    _type_code = PacketFieldType.PACKET
 
     def _validate(self, value):
         if not isinstance(value, PusTcPacket):
@@ -329,5 +330,5 @@ class PacketParameter(_Parameter):
         return f"{len(self.value)}s"
 
     @classmethod
-    def from_bytes(cls, bytes):
+    def from_bytes(cls, buffer):
         raise NotImplementedError

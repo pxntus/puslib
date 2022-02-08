@@ -28,18 +28,15 @@ class MyAppProcess(Process):
 
         self.parameters = _ParamCollection()
 
+        self._report = {0: self.parameters.param1, 1: self.parameters.param2}
         self.event1 = self._pus_service_5.add(eid=0,
                                               severity=Severity.INFO,
-                                              params_in_report=(
-                                                  self.parameters.param1,
-                                                  self.parameters.param2),
+                                              params_in_report=self._report,
                                               trig_param=self.parameters.param1,
                                               to_value=10)
         self.event2 = self._pus_service_5.add(eid=1,
                                               severity=Severity.INFO,
-                                              params_in_report=(
-                                                  self.parameters.param1,
-                                                  self.parameters.param2),
+                                              params_in_report=self._report,
                                               trig_param=self.parameters.param1,
                                               to_value=5)
 

@@ -1,6 +1,7 @@
 import struct
 from enum import IntEnum, IntFlag
 from dataclasses import dataclass
+from typing import Optional
 
 from .exceptions import CrcException, IncompletePacketException, InvalidPacketException, TooSmallBufferException
 from .time import CucTime
@@ -25,7 +26,7 @@ _PEC_FIELD_SIZE = 2
 
 def _validate_int_field(field_name, val, min_val, max_val):
     if isinstance(val, int):
-        if not (min_val <= val <= max_val):
+        if not min_val <= val <= max_val:
             raise InvalidPacketException(f"{field_name} must be between {min_val} and {max_val}")
     else:
         raise TypeError(f"{field_name} must be an integer")
@@ -73,10 +74,10 @@ class CcsdsSpacePacket:
         return bytes(buffer)
 
     def __str__(self):
-        s = f"{self.header.packet_type.name} Packet\n"
-        s += f"  APID: {self.header.apid}\n"
-        s += f"  Sequence count: {self.header.seq_count_or_name}\n"
-        return s
+        pkt_info = f"{self.header.packet_type.name} Packet\n"
+        pkt_info += f"  APID: {self.header.apid}\n"
+        pkt_info += f"  Sequence count: {self.header.seq_count_or_name}\n"
+        return pkt_info
 
     @property
     def packet_type(self):
@@ -114,8 +115,8 @@ class CcsdsSpacePacket:
         if packet_size > CCSDS_MAX_PACKET_SIZE:
             raise InvalidPacketException("Packet too large")
         if has_pec and validate_pec:
-            mv = memoryview(buffer)
-            if crc_ccitt_calculate(mv[:packet_size]) != 0:
+            mem_view = memoryview(buffer)
+            if crc_ccitt_calculate(mem_view[:packet_size]) != 0:
                 raise CrcException
 
         packet_version_number = (packet_id >> 13) & 0b111
@@ -194,7 +195,7 @@ class _PacketSecondaryHeaderTc:
     ack_flags: AckFlag = AckFlag.NONE
     service_type: int = 0
     service_subtype: int = 0
-    source: (int, None) = None
+    source: Optional[int] = None
 
 
 class PusTcPacket(CcsdsSpacePacket):
@@ -211,13 +212,13 @@ class PusTcPacket(CcsdsSpacePacket):
         return size
 
     def __str__(self):
-        s = super().__str__()
+        pkt_info = super().__str__()
         if self.header.secondary_header_flag:
-            s += f"  Service type: {self.secondary_header.service_type}\n"
-            s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+            pkt_info += f"  Service type: {self.secondary_header.service_type}\n"
+            pkt_info += f"  Service subtype: {self.secondary_header.service_subtype}\n"
             if self.payload:
-                s += f"  Application data: 0x{self.payload.hex()}"
-        return s
+                pkt_info += f"  Application data: 0x{self.payload.hex()}"
+        return pkt_info
 
     @property
     def name(self):
@@ -264,8 +265,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
         # Packet error control
         if self.has_pec:
-            mv = memoryview(buffer)
-            pec = crc_ccitt_calculate(mv[0:offset])
+            mem_view = memoryview(buffer)
+            pec = crc_ccitt_calculate(mem_view[0:offset])
             buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
             offset += _PEC_FIELD_SIZE
 
@@ -380,13 +381,13 @@ class PusTcPacket(CcsdsSpacePacket):
 
 @dataclass
 class _PacketSecondaryHeaderTm:
-    pus_version: (int, None) = TM_PACKET_PUS_VERSION_NUMBER
-    spacecraft_time_ref_status: (int, None) = None
-    service_type: (int, None) = None
-    service_subtype: (int, None) = None
-    msg_type_counter: (int, None) = None
-    destination: (int, None) = None
-    time: (CucTime, None) = None
+    pus_version: Optional[int] = TM_PACKET_PUS_VERSION_NUMBER
+    spacecraft_time_ref_status: Optional[int] = None
+    service_type: Optional[int] = None
+    service_subtype: Optional[int] = None
+    msg_type_counter: Optional[int] = None
+    destination: Optional[int] = None
+    time: Optional[CucTime] = None
 
 
 class PusTmPacket(CcsdsSpacePacket):
@@ -406,14 +407,14 @@ class PusTmPacket(CcsdsSpacePacket):
         return size
 
     def __str__(self):
-        s = super().__str__()
+        pkt_info = super().__str__()
         if self.header.secondary_header_flag:
-            s += f"  Service type: {self.secondary_header.service_type}\n"
-            s += f"  Service subtype: {self.secondary_header.service_subtype}\n"
-            s += f"  CUC timestamp: {self.secondary_header.time}\n"
+            pkt_info += f"  Service type: {self.secondary_header.service_type}\n"
+            pkt_info += f"  Service subtype: {self.secondary_header.service_subtype}\n"
+            pkt_info += f"  CUC timestamp: {self.secondary_header.time}\n"
             if self.payload:
-                s += f"  Source data: 0x{self.payload.hex()}"
-        return s
+                pkt_info += f"  Source data: 0x{self.payload.hex()}"
+        return pkt_info
 
     @property
     def seq_count(self):
@@ -472,8 +473,8 @@ class PusTmPacket(CcsdsSpacePacket):
 
         # Packet error control
         if self.has_pec:
-            mv = memoryview(buffer)
-            pec = crc_ccitt_calculate(mv[0:offset])
+            mem_view = memoryview(buffer)
+            pec = crc_ccitt_calculate(mem_view[0:offset])
             buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
             offset += _PEC_FIELD_SIZE
 
