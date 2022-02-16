@@ -3,7 +3,7 @@ from enum import IntEnum, IntFlag
 from dataclasses import dataclass
 from typing import Optional
 
-from .exceptions import CrcException, IncompletePacketException, InvalidPacketException, TooSmallBufferException
+from .exceptions import CrcException, IncompletePacketException, InvalidPacketException
 from .time import CucTime
 from .crc_ccitt import calculate as crc_ccitt_calculate
 
@@ -12,6 +12,8 @@ CCSDS_MAX_PACKET_SIZE = 65542
 
 TM_PACKET_PUS_VERSION_NUMBER = 2
 TC_PACKET_PUS_VERSION_NUMBER = 2
+
+IDLE_APID = 0b11111111111
 
 _COMMON_SEC_HDR_STRUCT = struct.Struct('>BBB')
 _PEC_FIELD_SIZE = 2
@@ -94,7 +96,12 @@ class CcsdsSpacePacket:
     def serialize(self):
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
-        return self._CCSDS_HDR_STRUCT.pack(packet_id, seq_ctrl, self.header.data_length)
+        ccsds_header = self._CCSDS_HDR_STRUCT.pack(packet_id, seq_ctrl, self.header.data_length)
+        if self.header.secondary_header_flag:
+            packet_data_field = b''  # Leave it to subclasses to handle data field
+        else:
+            packet_data_field = self.payload
+        return ccsds_header + packet_data_field
 
     def request_id(self):
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
@@ -131,7 +138,7 @@ class CcsdsSpacePacket:
         _validate_int_field('Packet version number', packet_version_number, 0, 0)
         packet.header.packet_version_number = packet_version_number
 
-        packet_type = kwargs.get('packet_type', None)
+        packet_type = kwargs.get('packet_type', PacketType.TM)
         if not isinstance(packet_type, PacketType):
             raise TypeError("Packet type must be a PacketType")
         packet.header.packet_type = packet_type
@@ -140,14 +147,14 @@ class CcsdsSpacePacket:
         _validate_bool_field('Secondary header flag', secondary_header_flag)
         packet.header.secondary_header_flag = secondary_header_flag
 
-        apid = kwargs.get('apid', None)
+        apid = kwargs.get('apid', IDLE_APID)
         _validate_int_field('apid', apid, 0, 0x7ff)
         packet.header.apid = apid
 
         seq_flags = kwargs.get('seq_flags', SequenceFlag.UNSEGMENTED)
         packet.header.seq_flags = seq_flags
 
-        seq_count = kwargs.get('seq_count_or_name', None)
+        seq_count = kwargs.get('seq_count_or_name', 0)
         _validate_int_field('Sequence count or name', seq_count, 0, 0x3fff)
         packet.header.seq_count_or_name = seq_count
 
