@@ -206,7 +206,7 @@ class PusTcPacket(CcsdsSpacePacket):
         size = super().__len__()
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
-            if self.secondary_header.source:
+            if self.secondary_header.source is not None:
                 size += self._SOURCE_FIELD_SIZE
         return size
 
@@ -397,9 +397,9 @@ class PusTmPacket(CcsdsSpacePacket):
         size = super().__len__()
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
-            if self.secondary_header.msg_type_counter:
+            if self.secondary_header.msg_type_counter is not None:
                 size += self._MSG_TYPE_COUNTER_FIELD_SIZE
-            if self.secondary_header.destination:
+            if self.secondary_header.destination is not None:
                 size += self._DESTINATION_FIELD_SIZE
             size += len(self.secondary_header.time)
         return size
