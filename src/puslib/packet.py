@@ -144,8 +144,7 @@ class CcsdsSpacePacket:
         _validate_int_field('apid', apid, 0, 0x7ff)
         packet.header.apid = apid
 
-        seq_flags = kwargs.get('seq_flags', 0b11)
-        _validate_int_field('Sequence flags', seq_flags, 0, 0b11)
+        seq_flags = kwargs.get('seq_flags', SequenceFlag.UNSEGMENTED)
         packet.header.seq_flags = seq_flags
 
         seq_count = kwargs.get('seq_count_or_name', None)
