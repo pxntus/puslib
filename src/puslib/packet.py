@@ -13,14 +13,7 @@ CCSDS_MAX_PACKET_SIZE = 65542
 TM_PACKET_PUS_VERSION_NUMBER = 2
 TC_PACKET_PUS_VERSION_NUMBER = 2
 
-_CCSDS_HDR_STRUCT = struct.Struct('>HHH')
 _COMMON_SEC_HDR_STRUCT = struct.Struct('>BBB')
-
-_SOURCE_FIELD_SIZE = 2
-
-_MSG_TYPE_COUNTER_FIELD_SIZE = 2
-_DESTINATION_FIELD_SIZE = 2
-
 _PEC_FIELD_SIZE = 2
 
 
@@ -42,6 +35,13 @@ class PacketType(IntEnum):
     TC = 1
 
 
+class SequenceFlag(IntEnum):
+    CONTINUATION_SEGMENT = 0b00
+    FIRST_SEGMENT = 0b01
+    LAST_SEGMENT = 0b10
+    UNSEGMENTED = 0b11
+
+
 @dataclass
 class _PacketPrimaryHeader:
     packet_version_number: int = CCSDS_PACKET_VERSION_NUMBER
@@ -52,13 +52,15 @@ class _PacketPrimaryHeader:
     apid: int = 0
 
     # Packet sequence control
-    seq_flags: int = 0b11
+    seq_flags: SequenceFlag = SequenceFlag.UNSEGMENTED
     seq_count_or_name: int = 0
 
     data_length: int = 0
 
 
 class CcsdsSpacePacket:
+    _CCSDS_HDR_STRUCT = struct.Struct('>HHH')
+
     def __init__(self, has_pec=True):
         self.header = _PacketPrimaryHeader()
         self.secondary_header = None
@@ -66,7 +68,7 @@ class CcsdsSpacePacket:
         self._has_pec = has_pec
 
     def __len__(self):
-        return _CCSDS_HDR_STRUCT.size + (len(self.payload) if self.payload else 0) + (2 if self._has_pec else 0)
+        return self._CCSDS_HDR_STRUCT.size + (len(self.payload) if self.payload else 0) + (2 if self._has_pec else 0)
 
     def __bytes__(self):
         buffer = bytearray(len(self))
@@ -97,8 +99,8 @@ class CcsdsSpacePacket:
 
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
-        _CCSDS_HDR_STRUCT.pack_into(buffer, 0, packet_id, seq_ctrl, self.header.data_length)
-        return _CCSDS_HDR_STRUCT.size
+        self._CCSDS_HDR_STRUCT.pack_into(buffer, 0, packet_id, seq_ctrl, self.header.data_length)
+        return self._CCSDS_HDR_STRUCT.size
 
     def request_id(self):
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
@@ -107,9 +109,9 @@ class CcsdsSpacePacket:
 
     @classmethod
     def deserialize(cls, buffer, has_pec=True, validate_pec=True):
-        packet_id, seq_ctrl, data_length = _CCSDS_HDR_STRUCT.unpack_from(buffer)
+        packet_id, seq_ctrl, data_length = cls._CCSDS_HDR_STRUCT.unpack_from(buffer)
 
-        packet_size = _CCSDS_HDR_STRUCT.size + data_length + 1
+        packet_size = cls._CCSDS_HDR_STRUCT.size + data_length + 1
         if packet_size > len(buffer):
             raise IncompletePacketException()
         if packet_size > CCSDS_MAX_PACKET_SIZE:
@@ -164,7 +166,7 @@ class CcsdsSpacePacket:
 
         data_length = kwargs.get('data_length', None)
         data_size_except_source_data = kwargs.get('secondary_header_length', 0) + (2 if packet.has_pec else 0)
-        max_data_size = CCSDS_MAX_PACKET_SIZE - _CCSDS_HDR_STRUCT.size - data_size_except_source_data
+        max_data_size = CCSDS_MAX_PACKET_SIZE - cls._CCSDS_HDR_STRUCT.size - data_size_except_source_data
         if data_length:
             min_data_size = data_size_except_source_data
             _validate_int_field('Data length', data_length + 1, min_data_size, max_data_size)
@@ -199,6 +201,8 @@ class _PacketSecondaryHeaderTc:
 
 
 class PusTcPacket(CcsdsSpacePacket):
+    _SOURCE_FIELD_SIZE = 2
+
     def __init__(self, has_pec=True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTc()
@@ -208,7 +212,7 @@ class PusTcPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
             if self.secondary_header.source:
-                size += _SOURCE_FIELD_SIZE
+                size += self._SOURCE_FIELD_SIZE
         return size
 
     def __str__(self):
@@ -254,8 +258,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
         # Last "optional" part of secondary header
         if self.secondary_header.source:
-            buffer[offset:offset + _SOURCE_FIELD_SIZE] = self.secondary_header.source.to_bytes(_SOURCE_FIELD_SIZE, byteorder='big')
-            offset += _SOURCE_FIELD_SIZE
+            buffer[offset:offset + self._SOURCE_FIELD_SIZE] = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
+            offset += self._SOURCE_FIELD_SIZE
 
         # User data field
         if self.payload:
@@ -275,10 +279,10 @@ class PusTcPacket(CcsdsSpacePacket):
     @classmethod
     def deserialize(cls, buffer, has_source_field=True, has_pec=True, validate_fields=True, validate_pec=True):
         packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
-        offset = _CCSDS_HDR_STRUCT.size
+        offset = cls._CCSDS_HDR_STRUCT.size
 
         data_field_except_source_length = ((_COMMON_SEC_HDR_STRUCT.size + (2 if has_source_field else 0)) if secondary_header_flag else 0) + (2 if has_pec else 0)
-        if len(buffer) < _CCSDS_HDR_STRUCT.size + data_field_except_source_length:
+        if len(buffer) < cls._CCSDS_HDR_STRUCT.size + data_field_except_source_length:
             raise IncompletePacketException()
 
         if secondary_header_flag:
@@ -290,8 +294,8 @@ class PusTcPacket(CcsdsSpacePacket):
 
             # Last "optional" part of secondary header
             if has_source_field:
-                source = int.from_bytes(buffer[offset:offset + _SOURCE_FIELD_SIZE], byteorder='big')
-                offset += _SOURCE_FIELD_SIZE
+                source = int.from_bytes(buffer[offset:offset + cls._SOURCE_FIELD_SIZE], byteorder='big')
+                offset += cls._SOURCE_FIELD_SIZE
             else:
                 source = None
         else:
@@ -305,7 +309,7 @@ class PusTcPacket(CcsdsSpacePacket):
         app_data_length = data_length + 1 - data_field_except_source_length
         app_data = bytes(buffer[offset:offset + app_data_length]) if app_data_length else None
 
-        packet_length = _CCSDS_HDR_STRUCT.size + data_length + 1
+        packet_length = cls._CCSDS_HDR_STRUCT.size + data_length + 1
 
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
@@ -391,6 +395,9 @@ class _PacketSecondaryHeaderTm:
 
 
 class PusTmPacket(CcsdsSpacePacket):
+    _MSG_TYPE_COUNTER_FIELD_SIZE = 2
+    _DESTINATION_FIELD_SIZE = 2
+
     def __init__(self, has_pec=True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTm()
@@ -400,9 +407,9 @@ class PusTmPacket(CcsdsSpacePacket):
         if self.header.secondary_header_flag:
             size += _COMMON_SEC_HDR_STRUCT.size
             if self.secondary_header.msg_type_counter:
-                size += _MSG_TYPE_COUNTER_FIELD_SIZE
+                size += self._MSG_TYPE_COUNTER_FIELD_SIZE
             if self.secondary_header.destination:
-                size += _DESTINATION_FIELD_SIZE
+                size += self._DESTINATION_FIELD_SIZE
             size += len(self.secondary_header.time)
         return size
 
@@ -455,11 +462,11 @@ class PusTmPacket(CcsdsSpacePacket):
 
         # "Optional" parts of secondary header
         if self.secondary_header.msg_type_counter:
-            buffer[offset:offset + _MSG_TYPE_COUNTER_FIELD_SIZE] = self.secondary_header.msg_type_counter.to_bytes(_MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
-            offset += _MSG_TYPE_COUNTER_FIELD_SIZE
+            buffer[offset:offset + self._MSG_TYPE_COUNTER_FIELD_SIZE] = self.secondary_header.msg_type_counter.to_bytes(self._MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
+            offset += self._MSG_TYPE_COUNTER_FIELD_SIZE
         if self.secondary_header.destination:
-            buffer[offset:offset + _DESTINATION_FIELD_SIZE] = self.secondary_header.destination.to_bytes(_DESTINATION_FIELD_SIZE, byteorder='big')
-            offset += _DESTINATION_FIELD_SIZE
+            buffer[offset:offset + self._DESTINATION_FIELD_SIZE] = self.secondary_header.destination.to_bytes(self._DESTINATION_FIELD_SIZE, byteorder='big')
+            offset += self._DESTINATION_FIELD_SIZE
 
         # Time field
         buffer[offset:offset + len(self.secondary_header.time)] = bytes(self.secondary_header.time)
@@ -483,11 +490,11 @@ class PusTmPacket(CcsdsSpacePacket):
     @classmethod
     def deserialize(cls, buffer, cuc_time=None, has_type_counter_field=True, has_destination_field=True, has_pec=True, validate_fields=True, validate_pec=True):
         packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
-        offset = _CCSDS_HDR_STRUCT.size
+        offset = cls._CCSDS_HDR_STRUCT.size
 
         if secondary_header_flag:
             data_field_except_source_length = _COMMON_SEC_HDR_STRUCT.size + (2 if has_type_counter_field else 0) + (2 if has_destination_field else 0) + len(cuc_time) + (2 if has_pec else 0)
-            if len(buffer) < _CCSDS_HDR_STRUCT.size + data_field_except_source_length:
+            if len(buffer) < cls._CCSDS_HDR_STRUCT.size + data_field_except_source_length:
                 raise IncompletePacketException()
 
             # First static part of secondary header
@@ -498,13 +505,13 @@ class PusTmPacket(CcsdsSpacePacket):
 
             # "Optional" parts of secondary header
             if has_type_counter_field:
-                msg_type_counter = int.from_bytes(buffer[offset:offset + _MSG_TYPE_COUNTER_FIELD_SIZE], byteorder='big')
-                offset += _MSG_TYPE_COUNTER_FIELD_SIZE
+                msg_type_counter = int.from_bytes(buffer[offset:offset + cls._MSG_TYPE_COUNTER_FIELD_SIZE], byteorder='big')
+                offset += cls._MSG_TYPE_COUNTER_FIELD_SIZE
             else:
                 msg_type_counter = None
             if has_destination_field:
-                destination = int.from_bytes(buffer[offset:offset + _DESTINATION_FIELD_SIZE], byteorder='big')
-                offset += _DESTINATION_FIELD_SIZE
+                destination = int.from_bytes(buffer[offset:offset + cls._DESTINATION_FIELD_SIZE], byteorder='big')
+                offset += cls._DESTINATION_FIELD_SIZE
             else:
                 destination = None
 
@@ -515,7 +522,7 @@ class PusTmPacket(CcsdsSpacePacket):
             offset += len(cuc_time)
         else:
             data_field_except_source_length = 2 if has_pec else 0
-            if len(buffer) < _CCSDS_HDR_STRUCT.size + data_field_except_source_length:
+            if len(buffer) < cls._CCSDS_HDR_STRUCT.size + data_field_except_source_length:
                 raise IncompletePacketException()
 
             pus_version = None
@@ -530,7 +537,7 @@ class PusTmPacket(CcsdsSpacePacket):
         source_data_length = data_length + 1 - data_field_except_source_length
         source_data = bytes(buffer[offset:offset + source_data_length]) if source_data_length else None
 
-        packet_length = _CCSDS_HDR_STRUCT.size + data_length + 1
+        packet_length = cls._CCSDS_HDR_STRUCT.size + data_length + 1
 
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
