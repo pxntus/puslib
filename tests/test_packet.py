@@ -45,20 +45,20 @@ TcPacketArgs = namedtuple('TcPacketArgs', ['apid', 'name', 'pus_version', 'ack_f
 
 
 @pytest.mark.parametrize("args", [
-    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, True),
-    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, 0, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, True),
-    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, 0, AckFlag.ACCEPTANCE | AckFlag.COMPLETION, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, True),
+    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, 1, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, True),
+    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, 2, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, True),
+    TcPacketArgs(APID, SEQ_COUNT_OR_NAME, 2, AckFlag.ACCEPTANCE | AckFlag.COMPLETION, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, True),
 ])
 def test_tc_packet_create(args):
     args_to_pass = {k: v for k, v in args._asdict().items() if v is not None}
 
     packet = PusTcPacket.create(**args_to_pass)
-    packet.name == args.name
-    packet.secondary_header.pus_version == args.pus_version
-    packet.secondary_header.ack_flags == args.ack_flags
-    packet.secondary_header.service_type == args.service_type
-    packet.secondary_header.service_subtype == args.service_subtype
-    packet.secondary_header.source == args.source
+    assert packet.name == args.name
+    assert packet.secondary_header.pus_version == args.pus_version
+    assert packet.secondary_header.ack_flags == args.ack_flags
+    assert packet.secondary_header.service_type == args.service_type
+    assert packet.secondary_header.service_subtype == args.service_subtype
+    assert packet.secondary_header.source == args.source
 
 
 @pytest.mark.parametrize("args, length", [
@@ -75,20 +75,21 @@ def test_tc_packet_length(args, length):
     assert len(packet) == length
 
 
-@pytest.mark.parametrize("args, binary", [
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, False), bytes.fromhex('1810c0500002210801')),
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, True), bytes.fromhex('1810c0500004210801bbc9')),
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, False), bytes.fromhex('1810c05000042108012021')),
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, True), bytes.fromhex('1810c050000621080120213377')),
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, False), bytes.fromhex('1810c05000082108012021deadbeef')),
-    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, True), bytes.fromhex('1810c050000a2108012021deadbeefc984')),
+@pytest.mark.parametrize("args, length, binary", [
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, False), 9, bytes.fromhex('1810c0500002210801')),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, None, True), 11, bytes.fromhex('1810c0500004210801bbc9')),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, False), 11, bytes.fromhex('1810c05000042108012021')),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, None, True), 13, bytes.fromhex('1810c050000621080120213377')),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, False), 15, bytes.fromhex('1810c05000082108012021deadbeef')),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, True), 17, bytes.fromhex('1810c050000a2108012021deadbeefc984')),
 ])
-def test_tc_packet_serialize(args, binary):
+def test_tc_packet_serialize(args, length, binary):
     args_to_pass = {k: v for k, v in args._asdict().items() if v is not None}
     packet = PusTcPacket.create(**args_to_pass)
     buffer = bytearray(20)
     binary_length = packet.serialize(buffer)
     assert binary_length == len(binary)
+    assert length == binary_length
     assert buffer[0:binary_length] == binary
     assert bytes(packet) == binary
 
@@ -161,19 +162,20 @@ def test_tm_packet_length(args, length):
     assert len(packet) == length
 
 
-@pytest.mark.parametrize("args, binary", [
-    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, None, PUS_SERVICE, PUS_SUBSERVICE, None, None, TIME, None, False), bytes.fromhex('0810c0500009208204') + bytes(TIME)),
-    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, None, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, None, TIME, None, False), bytes.fromhex('0810c050000b2082041314') + bytes(TIME)),
-    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, None, False), bytes.fromhex('0810c050000d21820413142021') + bytes(TIME)),
-    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, False), bytes.fromhex('0810c050001121820413142021') + bytes(TIME) + DATA),
-    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, True), bytes.fromhex('0810c050001321820413142021') + bytes(TIME) + DATA + bytes.fromhex('0483')),
+@pytest.mark.parametrize("args, length, binary", [
+    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, None, PUS_SERVICE, PUS_SUBSERVICE, None, None, TIME, None, False), 16, bytes.fromhex('0810c0500009208204') + bytes(TIME)),
+    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, None, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, None, TIME, None, False), 18, bytes.fromhex('0810c050000b2082041314') + bytes(TIME)),
+    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, None, False), 20, bytes.fromhex('0810c050000d21820413142021') + bytes(TIME)),
+    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, False), 24, bytes.fromhex('0810c050001121820413142021') + bytes(TIME) + DATA),
+    (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, True), 26, bytes.fromhex('0810c050001321820413142021') + bytes(TIME) + DATA + bytes.fromhex('0483')),
 ])
-def test_tm_packet_serialize(args, binary):
+def test_tm_packet_serialize(args, length, binary):
     args_to_pass = {k: v for k, v in args._asdict().items() if v is not None}
     packet = PusTmPacket.create(**args_to_pass)
     buffer = bytearray(30)
     binary_length = packet.serialize(buffer)
     assert binary_length == len(binary)
+    assert length == binary_length
     assert buffer[0:binary_length] == binary
     assert bytes(packet) == binary
 

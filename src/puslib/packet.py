@@ -257,7 +257,7 @@ class PusTcPacket(CcsdsSpacePacket):
         offset += _COMMON_SEC_HDR_STRUCT.size
 
         # Last "optional" part of secondary header
-        if self.secondary_header.source:
+        if self.secondary_header.source is not None:
             buffer[offset:offset + self._SOURCE_FIELD_SIZE] = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
             offset += self._SOURCE_FIELD_SIZE
 
@@ -357,26 +357,26 @@ class PusTcPacket(CcsdsSpacePacket):
 
         if packet.header.secondary_header_flag:
             pus_version = kwargs.get('pus_version', TC_PACKET_PUS_VERSION_NUMBER)
-            if pus_version:
+            if pus_version is not None:
                 _validate_int_field('TC packet PUS version', pus_version, 0, 0b1111)
                 packet.secondary_header.pus_version = pus_version
 
             ack_flags = kwargs.get('ack_flags', AckFlag.NONE)
-            if ack_flags:
+            if ack_flags is not None:
                 _validate_int_field('Acknowledgement flags', ack_flags, 0, 0b1111)
                 packet.secondary_header.ack_flags = ack_flags
 
             service_type = kwargs.get('service_type', None)
-            if service_type:
+            if service_type is not None:
                 _validate_int_field('Service type', service_type, 0, 255)
                 packet.secondary_header.service_type = service_type
 
             service_subtype = kwargs.get('service_subtype', None)
-            if service_subtype:
+            if service_subtype is not None:
                 _validate_int_field('Service subtype', service_subtype, 0, 255)
                 packet.secondary_header.service_subtype = service_subtype
 
-            if source:
+            if source is not None:
                 _validate_int_field('Source ID', source, 0, 0xffff)
                 packet.secondary_header.source = source
 
@@ -461,10 +461,10 @@ class PusTmPacket(CcsdsSpacePacket):
         offset += _COMMON_SEC_HDR_STRUCT.size
 
         # "Optional" parts of secondary header
-        if self.secondary_header.msg_type_counter:
+        if self.secondary_header.msg_type_counter is not None:
             buffer[offset:offset + self._MSG_TYPE_COUNTER_FIELD_SIZE] = self.secondary_header.msg_type_counter.to_bytes(self._MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
             offset += self._MSG_TYPE_COUNTER_FIELD_SIZE
-        if self.secondary_header.destination:
+        if self.secondary_header.destination is not None:
             buffer[offset:offset + self._DESTINATION_FIELD_SIZE] = self.secondary_header.destination.to_bytes(self._DESTINATION_FIELD_SIZE, byteorder='big')
             offset += self._DESTINATION_FIELD_SIZE
 
@@ -590,7 +590,7 @@ class PusTmPacket(CcsdsSpacePacket):
         packet = super(cls, cls).create(**kwargs)
 
         pus_version = kwargs.get('pus_version', TM_PACKET_PUS_VERSION_NUMBER)
-        if pus_version:
+        if pus_version is not None:
             _validate_int_field('TM packet PUS version', pus_version, 0, 0b1111)
             packet.secondary_header.pus_version = pus_version
 
@@ -599,20 +599,20 @@ class PusTmPacket(CcsdsSpacePacket):
         packet.secondary_header.spacecraft_time_ref_status = spacecraft_time_ref_status
 
         service_type = kwargs.get('service_type', None)
-        if service_type:
+        if service_type is not None:
             _validate_int_field('Service type', service_type, 0, 255)
             packet.secondary_header.service_type = service_type
 
         service_subtype = kwargs.get('service_subtype', None)
-        if service_subtype:
+        if service_subtype is not None:
             _validate_int_field('Service subtype', service_subtype, 0, 255)
             packet.secondary_header.service_subtype = service_subtype
 
-        if msg_type_counter:
+        if msg_type_counter is not None:
             _validate_int_field('Message type counter', msg_type_counter, 0, 0xffff)
             packet.secondary_header.msg_type_counter = msg_type_counter
 
-        if destination:
+        if destination is not None:
             _validate_int_field('Destination ID', destination, 0, 0xffff)
             packet.secondary_header.destination = destination
 
