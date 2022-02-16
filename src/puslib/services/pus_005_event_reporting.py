@@ -98,7 +98,7 @@ class EventReporting(PusService):
         return True
 
     def _report_disabled_events(self, app_data):
-        if app_data is not None:
+        if len(app_data) != 0:
             return False
         time = get_pus_policy().CucTime()
         disabled_ids = [report.id for eid, report in self._reports.items() if not report.enabled]

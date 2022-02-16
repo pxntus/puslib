@@ -64,16 +64,14 @@ class CcsdsSpacePacket:
     def __init__(self, has_pec=True):
         self.header = _PacketPrimaryHeader()
         self.secondary_header = None
-        self.payload = None
+        self.payload = bytes()
         self._has_pec = has_pec
 
     def __len__(self):
         return self._CCSDS_HDR_STRUCT.size + (len(self.payload) if self.payload else 0) + (2 if self._has_pec else 0)
 
     def __bytes__(self):
-        buffer = bytearray(len(self))
-        self.serialize(buffer)
-        return bytes(buffer)
+        return self.serialize()
 
     def __str__(self):
         pkt_info = f"{self.header.packet_type.name} Packet\n"
@@ -93,14 +91,10 @@ class CcsdsSpacePacket:
     def has_pec(self):
         return self._has_pec
 
-    def serialize(self, buffer):
-        if len(buffer) < self.header.data_length + 1:
-            raise TooSmallBufferException()
-
+    def serialize(self):
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
-        self._CCSDS_HDR_STRUCT.pack_into(buffer, 0, packet_id, seq_ctrl, self.header.data_length)
-        return self._CCSDS_HDR_STRUCT.size
+        return self._CCSDS_HDR_STRUCT.pack(packet_id, seq_ctrl, self.header.data_length)
 
     def request_id(self):
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
@@ -160,9 +154,11 @@ class CcsdsSpacePacket:
 
         data = kwargs.get('data', None)
         if isinstance(data, (bytearray, bytes, type(None))):
+            if data is None:
+                data = bytes()
             packet.payload = data
         else:
-            raise TypeError("Application data must be None or a bytearray")
+            raise TypeError("Application data must be None, bytes or a bytearray")
 
         data_length = kwargs.get('data_length', None)
         data_size_except_source_data = kwargs.get('secondary_header_length', 0) + (2 if packet.has_pec else 0)
@@ -247,34 +243,30 @@ class PusTcPacket(CcsdsSpacePacket):
     def app_data(self):
         return self.payload
 
-    def serialize(self, buffer):
-        offset = super().serialize(buffer)
+    def serialize(self):
+        ccsds_header = super().serialize()
 
         # First static part of secondary header
         tmp = self.secondary_header.pus_version << 4 | self.secondary_header.ack_flags
         values = [tmp, self.secondary_header.service_type, self.secondary_header.service_subtype]
-        _COMMON_SEC_HDR_STRUCT.pack_into(buffer, offset, *values)
-        offset += _COMMON_SEC_HDR_STRUCT.size
+        ccsds_sec_header_static = _COMMON_SEC_HDR_STRUCT.pack(*values)
 
         # Last "optional" part of secondary header
         if self.secondary_header.source is not None:
-            buffer[offset:offset + self._SOURCE_FIELD_SIZE] = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
-            offset += self._SOURCE_FIELD_SIZE
-
-        # User data field
-        if self.payload:
-            app_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.source else 0) - (2 if self.has_pec else 0)
-            buffer[offset:offset + app_data_length] = self.payload
-            offset += app_data_length
+            ccsds_sec_header_source = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
+        else:
+            ccsds_sec_header_source = bytes()
 
         # Packet error control
+        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_source + self.payload
         if self.has_pec:
-            mem_view = memoryview(buffer)
-            pec = crc_ccitt_calculate(mem_view[0:offset])
-            buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
-            offset += _PEC_FIELD_SIZE
+            mem_view = memoryview(packet_without_pec)
+            pec = crc_ccitt_calculate(mem_view)
+            pec = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+        else:
+            pec = bytes()
 
-        return offset
+        return packet_without_pec + pec
 
     @classmethod
     def deserialize(cls, buffer, has_source_field=True, has_pec=True, validate_fields=True, validate_pec=True):
@@ -451,41 +443,34 @@ class PusTmPacket(CcsdsSpacePacket):
     def source_data(self):
         return self.payload
 
-    def serialize(self, buffer):
-        offset = super().serialize(buffer)
+    def serialize(self):
+        ccsds_header = super().serialize()
 
         # First static part of secondary header
         tmp = self.secondary_header.pus_version << 4 | self.secondary_header.spacecraft_time_ref_status
         values = [tmp, self.secondary_header.service_type, self.secondary_header.service_subtype]
-        _COMMON_SEC_HDR_STRUCT.pack_into(buffer, offset, *values)
-        offset += _COMMON_SEC_HDR_STRUCT.size
+        ccsds_sec_header_static = _COMMON_SEC_HDR_STRUCT.pack(*values)
 
         # "Optional" parts of secondary header
         if self.secondary_header.msg_type_counter is not None:
-            buffer[offset:offset + self._MSG_TYPE_COUNTER_FIELD_SIZE] = self.secondary_header.msg_type_counter.to_bytes(self._MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
-            offset += self._MSG_TYPE_COUNTER_FIELD_SIZE
+            ccsds_sec_header_msg_type_counter = self.secondary_header.msg_type_counter.to_bytes(self._MSG_TYPE_COUNTER_FIELD_SIZE, byteorder='big')
+        else:
+            ccsds_sec_header_msg_type_counter = bytes()
         if self.secondary_header.destination is not None:
-            buffer[offset:offset + self._DESTINATION_FIELD_SIZE] = self.secondary_header.destination.to_bytes(self._DESTINATION_FIELD_SIZE, byteorder='big')
-            offset += self._DESTINATION_FIELD_SIZE
-
-        # Time field
-        buffer[offset:offset + len(self.secondary_header.time)] = bytes(self.secondary_header.time)
-        offset += len(self.secondary_header.time)
-
-        # User data field
-        if self.payload:
-            source_data_length = self.header.data_length + 1 - _COMMON_SEC_HDR_STRUCT.size - (2 if self.secondary_header.msg_type_counter else 0) - (2 if self.secondary_header.destination else 0) - len(self.secondary_header.time) - (2 if self.has_pec else 0)
-            buffer[offset:offset + source_data_length] = self.payload
-            offset += source_data_length
+            ccsds_sec_header_destination = self.secondary_header.destination.to_bytes(self._DESTINATION_FIELD_SIZE, byteorder='big')
+        else:
+            ccsds_sec_header_destination = bytes()
 
         # Packet error control
+        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_msg_type_counter + ccsds_sec_header_destination + bytes(self.secondary_header.time) + self.payload
         if self.has_pec:
-            mem_view = memoryview(buffer)
-            pec = crc_ccitt_calculate(mem_view[0:offset])
-            buffer[offset:offset + _PEC_FIELD_SIZE] = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
-            offset += _PEC_FIELD_SIZE
+            mem_view = memoryview(packet_without_pec)
+            pec = crc_ccitt_calculate(mem_view)
+            pec = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+        else:
+            pec = bytes()
 
-        return offset
+        return packet_without_pec + pec
 
     @classmethod
     def deserialize(cls, buffer, cuc_time=None, has_type_counter_field=True, has_destination_field=True, has_pec=True, validate_fields=True, validate_pec=True):

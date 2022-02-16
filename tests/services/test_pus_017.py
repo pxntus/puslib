@@ -17,4 +17,4 @@ def test_are_you_alive_connection_test():
     report = tm_stream.get()
     assert report.service == 17
     assert report.subservice == 2
-    assert report.source_data is None
+    assert report.source_data == b''
