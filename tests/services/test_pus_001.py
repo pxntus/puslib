@@ -3,7 +3,7 @@ from functools import partial
 
 import pytest
 
-from puslib import get_pus_policy
+from puslib import get_policy
 from puslib.ident import PusIdent
 from puslib.packet import PusTcPacket, AckFlag
 from puslib.services import RequestVerification
@@ -13,7 +13,7 @@ from puslib.streams.buffer import QueuedOutput
 
 def unpack_payload(data):
     request_id = struct.Struct('>HH')
-    failure_notice = struct.Struct(get_pus_policy().request_verification.failure_code_type().format)
+    failure_notice = struct.Struct(get_policy().request_verification.failure_code_type().format)
     if len(data) < request_id.size:
         assert False, "Invalid payload length"
 

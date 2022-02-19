@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .. import get_pus_policy
+from .. import get_policy
 from .stream import InputStream
 
 
@@ -17,7 +17,7 @@ class FileInput(InputStream):
         offset = 0
         while offset < len(data):
             offset += self._other_headers_size
-            packet_length, packet = get_pus_policy().PusTcPacket.deserialize(data[offset:], validate_fields=False, validate_pec=self._validate_pec)
+            packet_length, packet = get_policy().PusTcPacket.deserialize(data[offset:], validate_fields=False, validate_pec=self._validate_pec)
             offset += packet_length
             yield packet
 
@@ -25,5 +25,5 @@ class FileInput(InputStream):
         with open(self._input, 'rb') as f:
             content = f.read()
         data = memoryview(content)
-        _, packet = get_pus_policy().PusTcPacket.deserialize(data[self._other_headers_size + offset:], validate_fields=False, validate_pec=False)
+        _, packet = get_policy().PusTcPacket.deserialize(data[self._other_headers_size + offset:], validate_fields=False, validate_pec=False)
         return packet

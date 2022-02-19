@@ -1,4 +1,4 @@
-from .. import get_pus_policy
+from .. import get_policy
 from .service import PusService, PusServiceType
 
 
@@ -8,8 +8,8 @@ class Test(PusService):
         super()._register_sub_service(1, self.connection_test)
 
     def connection_test(self, app_data):  # pylint: disable=unused-argument
-        time = get_pus_policy().CucTime()
-        report = get_pus_policy().PusTmPacket(
+        time = get_policy().CucTime()
+        report = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
             service_type=self._service_type.value,

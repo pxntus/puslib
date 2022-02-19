@@ -4,7 +4,7 @@ from enum import IntEnum
 
 from .service import PusService, PusServiceType
 from .param_report import ParamReport
-from .. import get_pus_policy
+from .. import get_policy
 
 
 class Severity(IntEnum):
@@ -54,9 +54,9 @@ class EventReporting(PusService):
         if not report.enabled:
             return
 
-        time = get_pus_policy().CucTime()
+        time = get_policy().CucTime()
         payload = report.to_bytes()
-        packet = get_pus_policy().PusTmPacket(
+        packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
             service_type=self._service_type.value,
@@ -80,10 +80,10 @@ class EventReporting(PusService):
 
     def _toggle(self, app_data, enable=True):
         try:
-            num_ids = get_pus_policy().event_reporting.count_type(
-                get_pus_policy().event_reporting.count_type.from_bytes(app_data)
+            num_ids = get_policy().event_reporting.count_type(
+                get_policy().event_reporting.count_type.from_bytes(app_data)
             )
-            fmt = '>' + f"{num_ids.value}{get_pus_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
+            fmt = '>' + f"{num_ids.value}{get_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
             ids = struct.unpack(fmt, app_data[num_ids.size:])
         except struct.error:
             return False
@@ -100,12 +100,12 @@ class EventReporting(PusService):
     def _report_disabled_events(self, app_data):
         if len(app_data) != 0:
             return False
-        time = get_pus_policy().CucTime()
+        time = get_policy().CucTime()
         disabled_ids = [report.id for eid, report in self._reports.items() if not report.enabled]
-        num_ids = get_pus_policy().event_reporting.count_type(len(disabled_ids))
-        fmt = ">" + f"{num_ids.format}{num_ids.value}{get_pus_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
+        num_ids = get_policy().event_reporting.count_type(len(disabled_ids))
+        fmt = ">" + f"{num_ids.format}{num_ids.value}{get_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
         payload = struct.pack(fmt, num_ids.value, *disabled_ids)
-        packet = get_pus_policy().PusTmPacket(
+        packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
             service_type=self._service_type.value,

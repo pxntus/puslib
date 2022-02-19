@@ -1,6 +1,6 @@
 import struct
 
-from .. import get_pus_policy
+from .. import get_policy
 from .service import PusService, PusServiceType
 
 
@@ -12,8 +12,8 @@ class ParameterManagement(PusService):
         self._params = params
 
     def _report_parameter_values(self, app_data):
-        num_ids = get_pus_policy().function_management.count_type()
-        param_id_dummy = get_pus_policy().common.param_id_type()
+        num_ids = get_policy().function_management.count_type()
+        param_id_dummy = get_policy().common.param_id_type()
         try:
             num_ids.value = num_ids.from_bytes(app_data)
             fmt = ">" + f"{num_ids.value}{param_id_dummy.format}".replace('>', '')
@@ -28,8 +28,8 @@ class ParameterManagement(PusService):
         fmt = '>' + fmt.replace('>', '')
         values = [self._params[param_id].value for param_id in ids]
         source_data = struct.pack(fmt, num_ids.value, *[arg for pair in zip(ids, values) for arg in pair])
-        time = get_pus_policy().CucTime()
-        packet = get_pus_policy().PusTmPacket(
+        time = get_policy().CucTime()
+        packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),
             service_type=self._service_type.value,
@@ -42,12 +42,12 @@ class ParameterManagement(PusService):
 
     def _set_parameter_values(self, app_data):
         try:
-            num_values = get_pus_policy().function_management.count_type().from_bytes(app_data)
+            num_values = get_policy().function_management.count_type().from_bytes(app_data)
             new_values = {}
-            offset = get_pus_policy().function_management.count_type().size
+            offset = get_policy().function_management.count_type().size
             for _ in range(num_values):
-                param_id = get_pus_policy().common.param_id_type().from_bytes(app_data[offset:])
-                offset += get_pus_policy().common.param_id_type().size
+                param_id = get_policy().common.param_id_type().from_bytes(app_data[offset:])
+                offset += get_policy().common.param_id_type().size
                 if param_id not in self._params or param_id in new_values:
                     return False
                 param = self._params[param_id]

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 sys.path.append(r'../')
 
-from puslib import get_pus_policy  # noqa: E402
+from puslib import get_policy  # noqa: E402
 from puslib.parameter import UInt16Parameter, UInt32Parameter  # noqa: E402
 from puslib.services import Severity  # noqa: E402
 from puslib.process import Process  # noqa: E402
@@ -59,7 +59,7 @@ def tc_test(arg1, arg2):
 
 
 def inject_tc():
-    tc_packet = get_pus_policy().PusTcPacket(
+    tc_packet = get_policy().PusTcPacket(
         apid=10,
         name=0,
         service_type=8,
@@ -70,7 +70,7 @@ def inject_tc():
 
 
 def inject_tc2():
-    tc_packet = get_pus_policy().PusTcPacket(
+    tc_packet = get_policy().PusTcPacket(
         apid=10,
         name=0,
         service_type=17,

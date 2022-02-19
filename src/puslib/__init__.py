@@ -21,26 +21,26 @@ class PusPolicy:
         self.event_reporting = self.EventReporting
         self.function_management = self.FunctionManagement
 
-    @property
-    def CucTime(self):
-        return partial(CucTime.create,
+    def CucTime(self, *args, **kwargs):
+        func = partial(CucTime.create,
             basic_unit_length=4,
             frac_unit_length=2,
             has_preamble=True)
+        return func(*args, **kwargs)
 
-    @property
-    def PusTcPacket(self):
-        return partial(PusTcPacket.create,
+    def PusTcPacket(self, *args, **kwargs):
+        func = partial(PusTcPacket.create,
             pus_version=1,
             ack_flags=AckFlag.ACCEPTANCE,
             source=None)
+        return func(*args, **kwargs)
 
-    @property
-    def PusTmPacket(self):
-        return partial(PusTmPacket.create,
+    def PusTmPacket(self, *args, **kwargs):
+        func = partial(PusTmPacket.create,
             pus_version=1,
             msg_type_counter=None,
             destination=None)
+        return func(*args, **kwargs)
 
     @dataclass
     class Common:
@@ -73,10 +73,10 @@ class PusPolicy:
 _pus_policy = PusPolicy()
 
 
-def set_pus_policy(policy):
+def set_policy(policy):
     global _pus_policy
     _pus_policy = policy
 
 
-def get_pus_policy():
+def get_policy():
     return _pus_policy

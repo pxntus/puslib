@@ -1,7 +1,7 @@
 import struct
 from collections import namedtuple
 
-from .. import get_pus_policy
+from .. import get_policy
 from .service import PusService, PusServiceType
 from .error_codes import CommonErrorCode
 
@@ -15,9 +15,9 @@ class FunctionManagement(PusService):
         self._functions = {}
 
     def _perform(self, app_data):
-        fid = get_pus_policy().function_management.function_id_type()
+        fid = get_policy().function_management.function_id_type()
         try:
-            fid.value = get_pus_policy().function_management.function_id_type.from_bytes(app_data[:fid.size])
+            fid.value = get_policy().function_management.function_id_type.from_bytes(app_data[:fid.size])
         except struct.error:
             return CommonErrorCode.INCOMPLETE
         if fid.value not in self._functions:

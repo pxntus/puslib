@@ -5,7 +5,7 @@ from collections import OrderedDict
 from .service import PusService, PusServiceType
 from .param_report import ParamReport
 from .error_codes import CommonErrorCode
-from .. import get_pus_policy
+from .. import get_policy
 
 
 class Report(ParamReport):
@@ -59,47 +59,47 @@ class Housekeeping(PusService):
     @staticmethod
     def create_parameter_report(apid, seq_count, report, diagnostic=False):
         app_data = report.to_bytes()
-        packet = get_pus_policy().PusTmPacket(
+        packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,
             service_type=PusServiceType.HOUSEKEEPING.value,
             service_subtype=26 if diagnostic else 25,
-            time=get_pus_policy().CucTime(),
+            time=get_policy().CucTime(),
             data=app_data
         )
         return packet
 
     @staticmethod
     def create_structure_report(apid, seq_count, report, diagnostic=False):
-        app_data = get_pus_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
-            get_pus_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes() + \
-            get_pus_policy().housekeeping.count_type(len(report)).to_bytes()
+        app_data = get_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
+            get_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes() + \
+            get_policy().housekeeping.count_type(len(report)).to_bytes()
         for pid, _ in report:
-            app_data += get_pus_policy().common.param_id_type(pid).to_bytes()
-        app_data += get_pus_policy().housekeeping.count_type(0).to_bytes()
-        packet = get_pus_policy().PusTmPacket(
+            app_data += get_policy().common.param_id_type(pid).to_bytes()
+        app_data += get_policy().housekeeping.count_type(0).to_bytes()
+        packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,
             service_type=PusServiceType.HOUSEKEEPING.value,
             service_subtype=12 if diagnostic else 10,
-            time=get_pus_policy().CucTime(),
+            time=get_policy().CucTime(),
             data=app_data
         )
         return packet
 
     @staticmethod
     def create_periodic_generation_properties_report(apid, seq_count, reports_to_report, diagnostic=False):
-        app_data = get_pus_policy().housekeeping.count_type(len(reports_to_report)).to_bytes()
+        app_data = get_policy().housekeeping.count_type(len(reports_to_report)).to_bytes()
         for report in reports_to_report:
-            app_data += get_pus_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
-                get_pus_policy().housekeeping.periodic_generation_action_status_type(1 if report.enabled else 0).to_bytes() + \
-                get_pus_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes()
-        packet = get_pus_policy().PusTmPacket(
+            app_data += get_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
+                get_policy().housekeeping.periodic_generation_action_status_type(1 if report.enabled else 0).to_bytes() + \
+                get_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes()
+        packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,
             service_type=PusServiceType.HOUSEKEEPING.value,
             service_subtype=36 if diagnostic else 35,
-            time=get_pus_policy().CucTime(),
+            time=get_policy().CucTime(),
             data=app_data
         )
         return packet
@@ -108,7 +108,7 @@ class Housekeeping(PusService):
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
 
         try:
-            sid = get_pus_policy().housekeeping.structure_id_type()
+            sid = get_policy().housekeeping.structure_id_type()
             sid.value = sid.from_bytes(app_data)
             if append:
                 if sid.value not in reports:
@@ -121,17 +121,17 @@ class Housekeeping(PusService):
             offset = sid.size
 
             if not append:
-                collection_interval = get_pus_policy().housekeeping.collection_interval_type()
+                collection_interval = get_policy().housekeeping.collection_interval_type()
                 collection_interval.value = collection_interval.from_bytes(app_data[offset:])
                 offset += collection_interval.size
 
             # parse number of parameters in the report definition
-            n1 = get_pus_policy().housekeeping.count_type()
+            n1 = get_policy().housekeeping.count_type()
             n1.value = n1.from_bytes(app_data[offset:])
             offset += n1.size
 
             # parse parameter IDs
-            param_id_dummy = get_pus_policy().common.param_id_type()
+            param_id_dummy = get_policy().common.param_id_type()
             fmt = ">" + f"{n1.value}{param_id_dummy.format}".replace('>', '')
             param_ids = struct.unpack(fmt, app_data[offset:offset + struct.calcsize(fmt)])
             if len(param_ids) != len(set(param_ids)):
@@ -140,7 +140,7 @@ class Housekeeping(PusService):
             offset += struct.calcsize(fmt)
 
             # parse number of fixed-length arrays
-            nfa = get_pus_policy().housekeeping.count_type()
+            nfa = get_policy().housekeeping.count_type()
             nfa.value = nfa.from_bytes(app_data[offset:])
             if nfa.value != 0:
                 raise NotImplementedError  # super commutated parameters is not supported
@@ -168,12 +168,12 @@ class Housekeeping(PusService):
         """
         try:
             # parse number of parameters in the report definition
-            num_reports = get_pus_policy().housekeeping.count_type()
+            num_reports = get_policy().housekeeping.count_type()
             num_reports.value = num_reports.from_bytes(app_data)
             offset = num_reports.size
 
             # parse report IDs
-            report_id_dummy = get_pus_policy().housekeeping.structure_id_type()
+            report_id_dummy = get_policy().housekeeping.structure_id_type()
             fmt = ">" + f"{num_reports.value}{report_id_dummy.format}".replace('>', '')
             report_ids = struct.unpack(fmt, app_data[offset:])
 
@@ -222,14 +222,14 @@ class Housekeeping(PusService):
     def _modify_report_intervals(self, app_data, diagnostic=False):
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
         try:
-            n = get_pus_policy().housekeeping.count_type()
+            n = get_policy().housekeeping.count_type()
             n.value = n.from_bytes(app_data)
             offset = n.size
             for _ in range(n.value):
-                sid = get_pus_policy().housekeeping.structure_id_type()
+                sid = get_policy().housekeeping.structure_id_type()
                 sid.value = sid.from_bytes(app_data[offset:])
                 offset += sid.size
-                collection_interval = get_pus_policy().housekeeping.collection_interval_type()
+                collection_interval = get_policy().housekeeping.collection_interval_type()
                 collection_interval.value = collection_interval.from_bytes(app_data[offset:])
 
                 if sid in reports:
@@ -243,12 +243,12 @@ class Housekeeping(PusService):
     def _request_interval_properties(self, app_data, diagnostic=False):
         try:
             # parse number of parameters in the report definition
-            num_reports = get_pus_policy().housekeeping.count_type()
+            num_reports = get_policy().housekeeping.count_type()
             num_reports.value = num_reports.from_bytes(app_data)
             offset = num_reports.size
 
             # parse report IDs
-            report_id_dummy = get_pus_policy().housekeeping.structure_id_type()
+            report_id_dummy = get_policy().housekeeping.structure_id_type()
             fmt = ">" + f"{num_reports.value}{report_id_dummy.format}".replace('>', '')
             report_ids = struct.unpack(fmt, app_data[offset:])
 

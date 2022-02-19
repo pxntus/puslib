@@ -1,7 +1,7 @@
 import struct
 from collections import OrderedDict
 
-from .. import get_pus_policy
+from .. import get_policy
 
 
 class ParamReport:
@@ -41,7 +41,7 @@ class ParamReport:
         if params is not None:
             self._params = {**self._params, **params}
 
-        fmt = get_pus_policy().common.param_id_type().format
+        fmt = get_policy().common.param_id_type().format
         if len(self._params) > 0:
             fmt += "".join([p.format for p in self._params.values()])
             fmt = '>' + fmt.replace('>', '')
