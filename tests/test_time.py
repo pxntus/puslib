@@ -18,7 +18,7 @@ from puslib.exceptions import InvalidTimeFormat
     (1, 10, 0, 0),
 ])
 def test_init(basic_unit_length, frac_unit_length, seconds, fraction):
-    ct = CucTime(basic_time_unit_length=basic_unit_length, frac_time_unit_length=frac_unit_length)
+    ct = CucTime(basic_unit_length=basic_unit_length, frac_unit_length=frac_unit_length)
     assert ct.seconds == seconds
     assert ct.fraction == fraction
     assert ct.time_field == (seconds, fraction)
@@ -31,7 +31,7 @@ def test_init(basic_unit_length, frac_unit_length, seconds, fraction):
 ])
 def test_limits(num_second_octets, num_fraction_octets):
     with pytest.raises(InvalidTimeFormat):
-        CucTime(basic_time_unit_length=num_second_octets, frac_time_unit_length=num_fraction_octets)
+        CucTime(basic_unit_length=num_second_octets, frac_unit_length=num_fraction_octets)
 
 
 def test_get_time():
@@ -42,7 +42,7 @@ def test_get_time():
 
 
 def test_set_time():
-    ct = CucTime(basic_time_unit_length=1, frac_time_unit_length=0)
+    ct = CucTime(basic_unit_length=1, frac_unit_length=0)
     secs1 = -1
     with pytest.raises(ValueError):
         ct.seconds = secs1
@@ -58,7 +58,7 @@ def test_set_time():
     with pytest.raises(ValueError):
         ct.fraction = frac1
 
-    ct = CucTime(basic_time_unit_length=1, frac_time_unit_length=1)
+    ct = CucTime(basic_unit_length=1, frac_unit_length=1)
     frac1 = -1
     with pytest.raises(ValueError):
         ct.fraction = frac1
@@ -77,7 +77,7 @@ def test_set_time():
     (4, 2, 100.75),
 ])
 def test_from_datetime(basic_unit_length, frac_unit_length, seconds_since_epoch):
-    ct = CucTime(basic_time_unit_length=basic_unit_length, frac_time_unit_length=frac_unit_length)
+    ct = CucTime(basic_unit_length=basic_unit_length, frac_unit_length=frac_unit_length)
     dt = ct.epoch + timedelta(seconds=seconds_since_epoch)
     ct.from_datetime(dt)
     fraction, seconds = math.modf(seconds_since_epoch)
@@ -97,7 +97,7 @@ COMMON_CUCTIME_TEST_VECTORS = [
 
 @pytest.mark.parametrize("packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction", COMMON_CUCTIME_TEST_VECTORS)
 def test_from_bytes(packed_cuc, has_preamble, epoch, num_second_octets, num_fraction_octets, seconds, fraction):  # pylint: disable=unused-argument
-    ct = CucTime(basic_time_unit_length=num_second_octets, frac_time_unit_length=num_fraction_octets, has_preamble=has_preamble)
+    ct = CucTime(basic_unit_length=num_second_octets, frac_unit_length=num_fraction_octets, has_preamble=has_preamble)
     ct.from_bytes(packed_cuc)
     assert ct.epoch == TAI_EPOCH
     assert ct.seconds == seconds
@@ -118,5 +118,5 @@ def test_deserialize(packed_cuc, has_preamble, epoch, num_second_octets, num_fra
     assert ct.epoch == epoch if epoch else TAI_EPOCH
     assert ct.seconds == seconds
     assert ct.fraction == fraction
-    assert ct._format.basic_time_unit_length == num_second_octets  # pylint: disable=protected-access
-    assert ct._format.frac_time_unit_length == num_fraction_octets  # pylint: disable=protected-access
+    assert ct._format.basic_unit_length == num_second_octets  # pylint: disable=protected-access
+    assert ct._format.frac_unit_length == num_fraction_octets  # pylint: disable=protected-access

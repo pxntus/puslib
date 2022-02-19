@@ -23,15 +23,24 @@ class PusPolicy:
 
     @property
     def CucTime(self):
-        return partial(CucTime.create, 4, 2, has_preamble=True)
+        return partial(CucTime.create,
+            basic_unit_length=4,
+            frac_unit_length=2,
+            has_preamble=True)
 
     @property
     def PusTcPacket(self):
-        return partial(PusTcPacket.create, ack_flags=AckFlag.ACCEPTANCE, has_source_field=False)
+        return partial(PusTcPacket.create,
+            pus_version=1,
+            ack_flags=AckFlag.ACCEPTANCE,
+            source=None)
 
     @property
     def PusTmPacket(self):
-        return partial(PusTmPacket.create, has_type_counter_field=False, has_destination_field=False)
+        return partial(PusTmPacket.create,
+            pus_version=1,
+            msg_type_counter=None,
+            destination=None)
 
     @dataclass
     class Common:
@@ -61,13 +70,13 @@ class PusPolicy:
         count_type = UInt8Parameter
 
 
-_PUS_POLICY = PusPolicy()
+_pus_policy = PusPolicy()
 
 
 def set_pus_policy(policy):
-    global _PUS_POLICY
-    _PUS_POLICY = policy
+    global _pus_policy
+    _pus_policy = policy
 
 
 def get_pus_policy():
-    return _PUS_POLICY
+    return _pus_policy
