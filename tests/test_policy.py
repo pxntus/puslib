@@ -9,8 +9,7 @@ from puslib import PusPolicy, get_policy, set_policy
 def test_factory_functions():
     cuc_time = get_policy().CucTime()
     assert isinstance(cuc_time, time.CucTime)
-    assert cuc_time.seconds == 0
-    assert cuc_time.fraction == 0
+    assert cuc_time.seconds > 0
 
     cuc_time = get_policy().CucTime(1, 2)
     assert cuc_time.seconds == 1

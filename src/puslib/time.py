@@ -165,7 +165,7 @@ class CucTime:
     @classmethod
     def create(cls, seconds=0, fraction=0, basic_unit_length=4, frac_unit_length=2, has_preamble=True, epoch=None, preamble=None):
         cuc_time = cls(seconds, fraction, basic_unit_length, frac_unit_length, has_preamble, epoch, preamble)
-        #if seconds == 0 and fraction == 0:
-        #    dt_now = datetime.utcnow()
-        #    cuc_time.from_datetime(dt_now)
+        if seconds == 0 and fraction == 0:
+            dt_now = datetime.utcnow()
+            cuc_time.from_datetime(dt_now)
         return cuc_time
