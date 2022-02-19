@@ -136,6 +136,9 @@ class NumericParameter(_Parameter):
     def format(self):
         return self._fmt
 
+    def _validate(self, value):
+        raise NotImplementedError
+
 
 class _IntegerParameter(NumericParameter):
     _signed = None
@@ -146,6 +149,9 @@ class _IntegerParameter(NumericParameter):
     @classmethod
     def from_bytes(cls, buffer):
         return int.from_bytes(buffer[:cls._value_size], byteorder='big', signed=cls._signed)
+
+    def _validate(self, value):
+        raise NotImplementedError
 
 
 class _UnsignedIntegerParameter(_IntegerParameter):
@@ -267,7 +273,8 @@ class Real64Parameter(_RealParameter):
 
 
 class ArrayParameter(_Parameter):
-    pass
+    def _validate(self, value):
+        raise NotImplementedError
 
 
 class OctetStringParameter(ArrayParameter):
@@ -313,9 +320,17 @@ class TimeParameter(_Parameter):
 class AbsoluteTimeParameter(TimeParameter):
     _type_code = PacketFieldType.ABSOLUTE_TIME
 
+    @classmethod
+    def from_bytes(cls, buffer):
+        raise NotImplementedError
+
 
 class RelativeTimeParameter(TimeParameter):
     _type_code = PacketFieldType.RELATIVE_TIME
+
+    @classmethod
+    def from_bytes(cls, buffer):
+        raise NotImplementedError
 
 
 class PacketParameter(_Parameter):
