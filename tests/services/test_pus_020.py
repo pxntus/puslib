@@ -10,8 +10,8 @@ from puslib.services import RequestVerification, PusService20
 from puslib.streams.buffer import QueuedOutput
 
 
-@pytest.fixture
-def service_20_setup():
+@pytest.fixture(name="service_20_setup")
+def fixture_service_20_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
@@ -27,7 +27,7 @@ def service_20_setup():
 
 
 def test_report_parameter_values(service_20_setup):
-    pus_service_20, ident, tm_stream, params = service_20_setup
+    pus_service_20, ident, tm_stream, _ = service_20_setup
 
     app_data = get_pus_policy().function_management.count_type(1).to_bytes() + get_pus_policy().common.param_id_type(0).to_bytes()
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=20, service_subtype=1, data=app_data)

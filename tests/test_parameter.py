@@ -25,7 +25,7 @@ def test_numeric_parameter(args):
     param = args.param_class(args.init_value)
     assert param.value == args.init_value
     assert param.ptc == args.pus_param_type
-    assert type(param.value) == args.python_type
+    assert isinstance(param.value, args.python_type)
     assert param.size == args.value_size
     param_bytes = param.to_bytes()
     assert len(param_bytes) == args.value_size
@@ -68,7 +68,7 @@ def test_enumerate_parameter(args):
     param = parameter.EnumParameter(args.init_value, args.bitsize)
     assert param.value == args.init_value
     assert param.ptc == parameter.PacketFieldType.ENUMERATED
-    assert type(param.value) == int
+    assert isinstance(param.value, int)
     assert param.size == args.value_size
     param_bytes = param.to_bytes()
     assert len(param_bytes) == args.value_size

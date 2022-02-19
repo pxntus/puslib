@@ -11,8 +11,8 @@ from puslib.services import RequestVerification, PusService5, Severity
 from puslib.streams.buffer import QueuedOutput
 
 
-@pytest.fixture
-def service_5_setup():
+@pytest.fixture(name="service_5_setup")
+def fixture_service_5_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
@@ -121,7 +121,7 @@ def test_trigger_events(service_5_setup):
 
 
 def test_toggle_event(service_5_setup):
-    pus_service_5, tm_stream, ident = service_5_setup
+    pus_service_5, _, ident = service_5_setup
 
     ev1 = pus_service_5.add(0, Severity.INFO)
     ev2 = pus_service_5.add(1, Severity.LOW, params_in_report=None, enabled=False)

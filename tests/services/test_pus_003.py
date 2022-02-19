@@ -11,8 +11,8 @@ from puslib.services import RequestVerification, Housekeeping
 from puslib.streams.buffer import QueuedOutput
 
 
-@pytest.fixture
-def service_3_setup():
+@pytest.fixture(name="service_3_setup")
+def fixture_service_3_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
@@ -29,7 +29,7 @@ def service_3_setup():
     indirect=["service_3_setup"],
 )
 def test_create_report(service_3_setup, is_diagnostic_report):
-    pus_service_3, tm_stream, ident, params = service_3_setup
+    pus_service_3, _, ident, params = service_3_setup
 
     app_data = get_pus_policy().housekeeping.structure_id_type(1).to_bytes() + \
         get_pus_policy().housekeeping.collection_interval_type(500).to_bytes() + \
@@ -42,13 +42,13 @@ def test_create_report(service_3_setup, is_diagnostic_report):
     pus_service_3.enqueue(packet)
     pus_service_3.process()
 
-    reports = pus_service_3._diagnostic_reports if is_diagnostic_report else pus_service_3._housekeeping_reports
+    reports = pus_service_3._diagnostic_reports if is_diagnostic_report else pus_service_3._housekeeping_reports  # pylint: disable=protected-access
     assert reports is not None
     assert 1 in reports
     report = reports[1]
     assert report.id == 1
     assert report.collection_interval == 500
-    assert len(report._params) == 3
+    assert len(report._params) == 3  # pylint: disable=protected-access
 
 
 @pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
@@ -59,9 +59,9 @@ def test_create_report(service_3_setup, is_diagnostic_report):
     indirect=["service_3_setup"],
 )
 def test_delete_report(service_3_setup, is_diagnostic_report):
-    pus_service_3, tm_stream, ident, params = service_3_setup
+    pus_service_3, _, ident, params = service_3_setup
     report = pus_service_3.add(sid=1, collection_interval=1000, params_in_report=params, enabled=True, diagnostic=is_diagnostic_report)
-    reports = pus_service_3._diagnostic_reports if is_diagnostic_report else pus_service_3._housekeeping_reports
+    reports = pus_service_3._diagnostic_reports if is_diagnostic_report else pus_service_3._housekeeping_reports  # pylint: disable=protected-access
     assert len(reports) == 1
 
     # Delete non-existant report with SID = 0
@@ -93,7 +93,7 @@ def test_delete_report(service_3_setup, is_diagnostic_report):
     indirect=["service_3_setup"],
 )
 def test_enable_report(service_3_setup, is_diagnostic_report):
-    pus_service_3, tm_stream, ident, params = service_3_setup
+    pus_service_3, _, ident, params = service_3_setup
     report = pus_service_3.add(sid=1, collection_interval=1000, params_in_report=params, enabled=False, diagnostic=is_diagnostic_report)
     assert not report.enabled
 
@@ -118,7 +118,7 @@ def test_enable_report(service_3_setup, is_diagnostic_report):
     indirect=["service_3_setup"],
 )
 def test_disable_report(service_3_setup, is_diagnostic_report):
-    pus_service_3, tm_stream, ident, params = service_3_setup
+    pus_service_3, _, ident, params = service_3_setup
     report = pus_service_3.add(sid=1, collection_interval=1000, params_in_report=params, enabled=True, diagnostic=is_diagnostic_report)
     assert report.enabled
 

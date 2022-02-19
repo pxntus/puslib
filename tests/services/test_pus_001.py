@@ -30,8 +30,8 @@ def unpack_payload(data):
     return apid, name, code, extra_data
 
 
-@pytest.fixture
-def service_1_setup():
+@pytest.fixture(name="service_1_setup")
+def fixture_service_1_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
