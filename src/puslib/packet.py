@@ -347,10 +347,10 @@ class PusTcPacket(CcsdsSpacePacket):
         source = kwargs.get('source', None)
 
         if kwargs.get('secondary_header_flag', True):
-            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if source else 0)
+            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if source is not None else 0)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TC
-        kwargs['seq_count_or_name'] = kwargs.get('name', None)
+        kwargs['seq_count_or_name'] = kwargs.get('name', 0)
         packet = super(cls, cls).create(**kwargs)
 
         if packet.header.secondary_header_flag:
@@ -574,40 +574,41 @@ class PusTmPacket(CcsdsSpacePacket):
         time = kwargs.get('time', None)
 
         if kwargs.get('secondary_header_flag', True):
-            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter else 0) + (2 if destination else 0) + len(time)
+            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter is not None else 0) + (2 if destination is not None else 0) + len(time)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TM
-        kwargs['seq_count_or_name'] = kwargs.get('seq_count', None)
+        kwargs['seq_count_or_name'] = kwargs.get('seq_count', 0)
         packet = super(cls, cls).create(**kwargs)
 
-        pus_version = kwargs.get('pus_version', TM_PACKET_PUS_VERSION_NUMBER)
-        if pus_version is not None:
-            _validate_int_field('TM packet PUS version', pus_version, 0, 0b1111)
-            packet.secondary_header.pus_version = pus_version
+        if packet.header.secondary_header_flag:
+            pus_version = kwargs.get('pus_version', TM_PACKET_PUS_VERSION_NUMBER)
+            if pus_version is not None:
+                _validate_int_field('TM packet PUS version', pus_version, 0, 0b1111)
+                packet.secondary_header.pus_version = pus_version
 
-        spacecraft_time_ref_status = kwargs.get('spacecraft_time_ref_status', 0)
-        _validate_int_field('Spacecraft time reference status', spacecraft_time_ref_status, 0, 0b1111)
-        packet.secondary_header.spacecraft_time_ref_status = spacecraft_time_ref_status
+            spacecraft_time_ref_status = kwargs.get('spacecraft_time_ref_status', 0)
+            _validate_int_field('Spacecraft time reference status', spacecraft_time_ref_status, 0, 0b1111)
+            packet.secondary_header.spacecraft_time_ref_status = spacecraft_time_ref_status
 
-        service_type = kwargs.get('service_type', None)
-        if service_type is not None:
-            _validate_int_field('Service type', service_type, 0, 255)
-            packet.secondary_header.service_type = service_type
+            service_type = kwargs.get('service_type', None)
+            if service_type is not None:
+                _validate_int_field('Service type', service_type, 0, 255)
+                packet.secondary_header.service_type = service_type
 
-        service_subtype = kwargs.get('service_subtype', None)
-        if service_subtype is not None:
-            _validate_int_field('Service subtype', service_subtype, 0, 255)
-            packet.secondary_header.service_subtype = service_subtype
+            service_subtype = kwargs.get('service_subtype', None)
+            if service_subtype is not None:
+                _validate_int_field('Service subtype', service_subtype, 0, 255)
+                packet.secondary_header.service_subtype = service_subtype
 
-        if msg_type_counter is not None:
-            _validate_int_field('Message type counter', msg_type_counter, 0, 0xffff)
-            packet.secondary_header.msg_type_counter = msg_type_counter
+            if msg_type_counter is not None:
+                _validate_int_field('Message type counter', msg_type_counter, 0, 0xffff)
+                packet.secondary_header.msg_type_counter = msg_type_counter
 
-        if destination is not None:
-            _validate_int_field('Destination ID', destination, 0, 0xffff)
-            packet.secondary_header.destination = destination
+            if destination is not None:
+                _validate_int_field('Destination ID', destination, 0, 0xffff)
+                packet.secondary_header.destination = destination
 
-        if time:
-            packet.secondary_header.time = time
+            if time:
+                packet.secondary_header.time = time
 
         return packet
