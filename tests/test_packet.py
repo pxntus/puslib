@@ -122,29 +122,29 @@ PUS_SERVICE = 130
 PUS_SUBSERVICE = 4
 MSG_TYPE_COUNTER = 0x1314
 TM_DESTINATION = 0x2021
-TIME = CucTime(4, 2, 100, 10000)
+TIME = CucTime(100, 10000, 4, 2)
 DATA = bytes.fromhex('DEADBEEF')
 
 TmPacketArgs = namedtuple('TmPacketArgs', ['apid', 'seq_count', 'pus_version', 'spacecraft_time_ref_status', 'service_type', 'service_subtype', 'msg_type_counter', 'destination', 'time', 'data', 'has_pec'])
 
 
 @pytest.mark.parametrize("args", [
-    TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, None, PUS_SERVICE, PUS_SUBSERVICE, None, None, TIME, None, True),
+    TmPacketArgs(APID, SEQ_COUNT_OR_NAME, 1, None, PUS_SERVICE, PUS_SUBSERVICE, None, None, TIME, b'', True),
     TmPacketArgs(APID, SEQ_COUNT_OR_NAME, 2, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, True),
 ])
 def test_tm_packet_create(args):
     args_to_pass = {k: v for k, v in args._asdict().items() if v is not None}
 
     packet = PusTmPacket.create(**args_to_pass)
-    packet.seq_count == args.seq_count
-    packet.secondary_header.pus_version == args.pus_version
-    packet.secondary_header.spacecraft_time_ref_status == args.spacecraft_time_ref_status if args.spacecraft_time_ref_status else 0
-    packet.secondary_header.service_type == args.service_type
-    packet.secondary_header.service_subtype == args.service_subtype
-    packet.secondary_header.msg_type_counter == args.msg_type_counter
-    packet.secondary_header.destination == args.destination
-    packet.secondary_header.time == args.time
-    packet.source_data == args.data
+    assert packet.seq_count == args.seq_count
+    assert packet.secondary_header.pus_version == args.pus_version
+    assert packet.secondary_header.spacecraft_time_ref_status == (args.spacecraft_time_ref_status if args.spacecraft_time_ref_status else 0)
+    assert packet.secondary_header.service_type == args.service_type
+    assert packet.secondary_header.service_subtype == args.service_subtype
+    assert packet.secondary_header.msg_type_counter == args.msg_type_counter
+    assert packet.secondary_header.destination == args.destination
+    assert packet.secondary_header.time == args.time
+    assert packet.source_data == args.data
 
 
 @pytest.mark.parametrize("args, length", [

@@ -16,10 +16,10 @@ class TimeCodeIdentification(IntEnum):
 
 class _TimeFormat:
     def __init__(self, basic_time_unit_length, frac_time_unit_length, epoch=None, preamble=None):
-        if not (1 <= basic_time_unit_length <= 7):
+        if not 1 <= basic_time_unit_length <= 7:
             raise InvalidTimeFormat("Basic time unit must be 1 to 7 octets")
         self.basic_time_unit_length = basic_time_unit_length
-        if not (0 <= frac_time_unit_length <= 10):
+        if not 0 <= frac_time_unit_length <= 10:
             raise InvalidTimeFormat("Fractional time unit must be 0 to 10 octets")
         self.frac_time_unit_length = frac_time_unit_length
         self.epoch = epoch if epoch else TAI_EPOCH
@@ -61,7 +61,7 @@ class _TimeFormat:
 
 
 class CucTime:
-    def __init__(self, basic_time_unit_length, frac_time_unit_length, seconds=0, fraction=0, has_preamble=True, epoch=None, preamble=None):
+    def __init__(self, seconds=0, fraction=0, basic_time_unit_length=4, frac_time_unit_length=2, has_preamble=True, epoch=None, preamble=None):
         self._format = _TimeFormat(basic_time_unit_length, frac_time_unit_length, epoch, preamble)
         self._has_preamble = has_preamble
         self._seconds = seconds
@@ -153,12 +153,19 @@ class CucTime:
         seconds = int.from_bytes(buffer[preamble_size:fraction_offset], byteorder='big')
         fraction = int.from_bytes(buffer[fraction_offset:fraction_offset + frac_time_unit_length], byteorder='big')
 
-        return cls(basic_time_unit_length, frac_time_unit_length, seconds=seconds, fraction=fraction, has_preamble=has_preamble, epoch=epoch, preamble=preamble)
+        return cls(
+            seconds=seconds,
+            fraction=fraction,
+            basic_time_unit_length=basic_time_unit_length,
+            frac_time_unit_length=frac_time_unit_length,
+            has_preamble=has_preamble,
+            epoch=epoch,
+            preamble=preamble)
 
     @classmethod
-    def create(cls, basic_time_unit_length, frac_time_unit_length, seconds=0, fraction=0, has_preamble=True, epoch=None, preamble=None):
-        cuc_time = cls(basic_time_unit_length, frac_time_unit_length, seconds, fraction, has_preamble, epoch, preamble)
-        if seconds == 0 and fraction == 0:
-            dt_now = datetime.utcnow()
-            cuc_time.from_datetime(dt_now)
+    def create(cls, seconds=0, fraction=0, basic_time_unit_length=4, frac_time_unit_length=2, has_preamble=True, epoch=None, preamble=None):
+        cuc_time = cls(seconds, fraction, basic_time_unit_length, frac_time_unit_length, has_preamble, epoch, preamble)
+        #if seconds == 0 and fraction == 0:
+        #    dt_now = datetime.utcnow()
+        #    cuc_time.from_datetime(dt_now)
         return cuc_time
