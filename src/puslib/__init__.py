@@ -10,7 +10,7 @@ _MIN_PYTHON = (3, 7)
 if sys.version_info < _MIN_PYTHON:
     sys.exit(f"Python {_MIN_PYTHON[0]}.{_MIN_PYTHON[1]} or later is required.\n", 1)
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 
 class PusPolicy:
