@@ -482,7 +482,8 @@ class PusTmPacket(CcsdsSpacePacket):
         offset = cls._CCSDS_HDR_STRUCT.size
 
         if secondary_header_flag:
-            data_field_except_source_length = _COMMON_SEC_HDR_STRUCT.size + (2 if has_type_counter_field else 0) + (2 if has_destination_field else 0) + len(cuc_time) + (2 if has_pec else 0)
+            # Length field not completely validated until further down if cuc_time argument is None
+            data_field_except_source_length = _COMMON_SEC_HDR_STRUCT.size + (2 if has_type_counter_field else 0) + (2 if has_destination_field else 0) + (len(cuc_time) if cuc_time else 0) + (2 if has_pec else 0)
             if len(buffer) < cls._CCSDS_HDR_STRUCT.size + data_field_except_source_length:
                 raise IncompletePacketException()
 
@@ -507,7 +508,11 @@ class PusTmPacket(CcsdsSpacePacket):
             if cuc_time:
                 cuc_time.from_bytes(buffer[offset:])
             else:
-                cuc_time = CucTime.deserialize(buffer[offset:])
+                try:
+                    cuc_time = CucTime.deserialize(buffer[offset:])
+                except ValueError:
+                    raise IncompletePacketException()
+                data_field_except_source_length += len(cuc_time)
             offset += len(cuc_time)
         else:
             data_field_except_source_length = 2 if has_pec else 0
