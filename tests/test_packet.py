@@ -102,7 +102,7 @@ def test_tc_packet_serialize(args, binary):
     (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, TC_SOURCE, DATA, True), bytes.fromhex('1810c050000a2108012021deadbeefc984')),
 ])
 def test_tc_packet_deserialize(args, binary):
-    _, packet = PusTcPacket.deserialize(binary, has_source_field=True if args.source else False, has_pec=True if args.has_pec else False)
+    packet = PusTcPacket.deserialize(binary, has_source_field=True if args.source else False, has_pec=True if args.has_pec else False)
     assert packet.apid == args.apid
     assert packet.name == args.name
     assert packet.secondary_header.pus_version == (args.pus_version if args.pus_version else 2)
@@ -185,7 +185,7 @@ def test_tm_packet_serialize(args, binary):
     (TmPacketArgs(APID, SEQ_COUNT_OR_NAME, None, 1, PUS_SERVICE, PUS_SUBSERVICE, MSG_TYPE_COUNTER, TM_DESTINATION, TIME, DATA, True), bytes.fromhex('0810c050001321820413142021') + bytes(TIME) + DATA + bytes.fromhex('0483')),
 ])
 def test_tm_packet_deserialize(args, binary):
-    _, packet = PusTmPacket.deserialize(binary, has_type_counter_field=True if args.msg_type_counter else False, has_destination_field=True if args.destination else False, cuc_time=TIME, has_pec=True if args.has_pec else False)
+    packet = PusTmPacket.deserialize(binary, has_type_counter_field=True if args.msg_type_counter else False, has_destination_field=True if args.destination else False, cuc_time=TIME, has_pec=True if args.has_pec else False)
     assert packet.apid == args.apid
     assert packet.seq_count == args.seq_count
     assert packet.secondary_header.pus_version == (args.pus_version if args.pus_version else 2)
@@ -196,6 +196,7 @@ def test_tm_packet_deserialize(args, binary):
     assert packet.destination == args.destination
     assert packet.time == args.time
     assert packet.source_data == args.data
+    assert len(packet.source_data) == len(args.data)
     assert packet.has_pec == args.has_pec
 
     buffer = packet.serialize()

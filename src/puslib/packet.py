@@ -307,8 +307,6 @@ class PusTcPacket(CcsdsSpacePacket):
         app_data_length = data_length + 1 - data_field_except_source_length
         app_data = bytes(buffer[offset:offset + app_data_length]) if app_data_length else None
 
-        packet_length = cls._CCSDS_HDR_STRUCT.size + data_length + 1
-
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
                 packet_version_number=packet_version_number,
@@ -340,7 +338,7 @@ class PusTcPacket(CcsdsSpacePacket):
             packet.secondary_header.service_subtype = service_subtype
             packet.secondary_header.source = source
 
-        return packet_length, packet
+        return packet
 
     @classmethod
     def create(cls, **kwargs):
@@ -528,8 +526,6 @@ class PusTmPacket(CcsdsSpacePacket):
         source_data_length = data_length + 1 - data_field_except_source_length
         source_data = bytes(buffer[offset:offset + source_data_length]) if source_data_length else None
 
-        packet_length = cls._CCSDS_HDR_STRUCT.size + data_length + 1
-
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
                 packet_version_number=packet_version_number,
@@ -565,7 +561,7 @@ class PusTmPacket(CcsdsSpacePacket):
             packet.secondary_header.destination = destination
             packet.secondary_header.time = cuc_time
 
-        return packet_length, packet
+        return packet
 
     @classmethod
     def create(cls, **kwargs):
