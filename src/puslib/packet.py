@@ -252,19 +252,20 @@ class PusTcPacket(CcsdsSpacePacket):
     def serialize(self):
         ccsds_header = super().serialize()
 
-        # First static part of secondary header
-        tmp = self.secondary_header.pus_version << 4 | self.secondary_header.ack_flags
-        values = [tmp, self.secondary_header.service_type, self.secondary_header.service_subtype]
-        ccsds_sec_header_static = _COMMON_SEC_HDR_STRUCT.pack(*values)
+        if self.header.secondary_header_flag:
+            # First static part of secondary header
+            tmp = self.secondary_header.pus_version << 4 | self.secondary_header.ack_flags
+            values = [tmp, self.secondary_header.service_type, self.secondary_header.service_subtype]
+            ccsds_sec_header_static = _COMMON_SEC_HDR_STRUCT.pack(*values)
 
-        # Last "optional" part of secondary header
-        if self.secondary_header.source is not None:
-            ccsds_sec_header_source = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
-        else:
-            ccsds_sec_header_source = bytes()
+            # Last "optional" part of secondary header
+            if self.secondary_header.source is not None:
+                ccsds_sec_header_source = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
+            else:
+                ccsds_sec_header_source = bytes()
 
         # Packet error control
-        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_source + self.payload
+        packet_without_pec = ccsds_header + (ccsds_sec_header_static + ccsds_sec_header_source if self.header.secondary_header_flag else bytes()) + (self.payload if self.header.secondary_header_flag else bytes())
         if self.has_pec:
             mem_view = memoryview(packet_without_pec)
             pec = crc_ccitt_calculate(mem_view)
