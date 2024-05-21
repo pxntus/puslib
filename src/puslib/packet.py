@@ -66,7 +66,7 @@ class CcsdsSpacePacket:
     def __init__(self, has_pec=True):
         self.header = _PacketPrimaryHeader()
         self.secondary_header = None
-        self.payload = bytes()
+        self.payload = None
         self._has_pec = has_pec
 
     def __len__(self):
