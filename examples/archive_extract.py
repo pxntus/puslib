@@ -14,5 +14,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     file_input_stream = FileInput(args.input, args.offset, args.validate_pec)
-    for packet in file_input_stream:
+    for _, packet in file_input_stream:
         print(packet)
