@@ -70,9 +70,11 @@ class CucTime:
     def __len__(self):
         return (len(self._format) if self._has_preamble else 0) + self._format.basic_unit_length + self._format.frac_unit_length
 
+    def __float__(self):
+        return self._seconds + (self._fraction / (2 ** (self._format.frac_unit_length * 8)))
+
     def __str__(self):
-        seconds = self._seconds + (self._fraction / (2 ** (self._format.frac_unit_length * 8)))
-        return f"{seconds:.3f} seconds since epoch ({self._format.epoch})"
+        return f"{float(self):.3f} seconds since epoch ({self._format.epoch})"
 
     def __bytes__(self):
         return (bytes(self._format) if self._has_preamble else b'') + (bitstring.pack(f'uintbe:{self._format.basic_unit_length * 8}', self._seconds).bytes) + (bitstring.pack(f'uintbe:{self._format.frac_unit_length * 8}', self._fraction).bytes if self._format.frac_unit_length else b'')
