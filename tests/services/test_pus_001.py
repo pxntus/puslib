@@ -24,6 +24,8 @@ def unpack_payload(data):
         code = failure_notice.unpack_from(data, request_id.size)[0]
         if len(data) > request_id.size + failure_notice.size:
             extra_data = data[request_id.size + failure_notice.size:]
+        else:
+            extra_data = None
     else:
         code = None
         extra_data = None
@@ -35,14 +37,14 @@ def fixture_service_1_setup():
     ident = PusIdent(apid=10)
     tm_stream = QueuedOutput()
     pus_service_1 = RequestVerification(ident, tm_stream)
-    TcPacket = partial(PusTcPacket.create, apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=8, service_subtype=1, data=bytes.fromhex("0000"))
-    return pus_service_1, tm_stream, TcPacket
+    tc_packet_class = partial(PusTcPacket.create, apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=8, service_subtype=1, data=bytes.fromhex("0000"))
+    return pus_service_1, tm_stream, tc_packet_class
 
 
 def test_no_ackflags(service_1_setup):
-    pus_service_1, tm_stream, TcPacket = service_1_setup
+    pus_service_1, tm_stream, tc_packet_class = service_1_setup
 
-    packet = TcPacket()
+    packet = tc_packet_class()
     pus_service_1.accept(packet)
     pus_service_1.start(packet)
     pus_service_1.progress(packet)
@@ -51,9 +53,9 @@ def test_no_ackflags(service_1_setup):
 
 
 def test_multiple_ackflags(service_1_setup):
-    pus_service_1, tm_stream, TcPacket = service_1_setup
+    pus_service_1, tm_stream, tc_packet_class = service_1_setup
 
-    packet = TcPacket(ack_flags=AckFlag.ACCEPTANCE | AckFlag.START_OF_EXECUTION | AckFlag.PROGRESS | AckFlag.COMPLETION)
+    packet = tc_packet_class(ack_flags=AckFlag.ACCEPTANCE | AckFlag.START_OF_EXECUTION | AckFlag.PROGRESS | AckFlag.COMPLETION)
     pus_service_1.accept(packet)
     pus_service_1.start(packet)
     pus_service_1.progress(packet)
@@ -61,7 +63,8 @@ def test_multiple_ackflags(service_1_setup):
     assert tm_stream.size == 4
 
 
-@pytest.mark.parametrize("service_1_setup, ack_flag, sub_service_success, sub_service_failure",
+@pytest.mark.parametrize(
+    "service_1_setup, ack_flag, sub_service_success, sub_service_failure",
     [
         ("service_1_setup", AckFlag.ACCEPTANCE, 1, 2),
         ("service_1_setup", AckFlag.START_OF_EXECUTION, 3, 4),
@@ -71,7 +74,7 @@ def test_multiple_ackflags(service_1_setup):
     indirect=["service_1_setup"],
 )
 def test_accept(service_1_setup, ack_flag, sub_service_success, sub_service_failure):
-    pus_service_1, tm_stream, TcPacket = service_1_setup
+    pus_service_1, tm_stream, tc_packet_class = service_1_setup
 
     if ack_flag == AckFlag.ACCEPTANCE:
         pus1_func = partial(pus_service_1.accept)
@@ -81,8 +84,10 @@ def test_accept(service_1_setup, ack_flag, sub_service_success, sub_service_fail
         pus1_func = partial(pus_service_1.progress)
     elif ack_flag == AckFlag.COMPLETION:
         pus1_func = partial(pus_service_1.complete)
+    else:
+        assert False
 
-    packet = TcPacket(ack_flags=ack_flag)
+    packet = tc_packet_class(ack_flags=ack_flag)
     pus1_func(packet)
     assert tm_stream.size == 1
     report = tm_stream.get()

@@ -38,8 +38,8 @@ def test_set_policy():
 
         def PusTcPacket(self, *args, **kwargs):
             func = partial(PusTcPacket.create,
-                pus_version=1,
-                source=None)
+                           pus_version=1,
+                           source=None)
             return func(*args, **kwargs)
 
     policy = Policy1()
@@ -56,8 +56,8 @@ def test_set_policy():
 
         def PusTcPacket(self, *args, **kwargs):
             func = partial(PusTcPacket.create,
-                pus_version=2,
-                source=None)
+                           pus_version=2,
+                           source=None)
             return func(*args, **kwargs)
 
     policy = Policy2()

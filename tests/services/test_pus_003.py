@@ -21,7 +21,8 @@ def fixture_service_3_setup():
     return pus_service_3, tm_stream, ident, params
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
@@ -51,7 +52,8 @@ def test_create_report(service_3_setup, is_diagnostic_report):
     assert len(report._params) == 3  # pylint: disable=protected-access
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
@@ -85,7 +87,8 @@ def test_delete_report(service_3_setup, is_diagnostic_report):
     assert len(reports) == 0
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
@@ -110,7 +113,8 @@ def test_enable_report(service_3_setup, is_diagnostic_report):
     assert report.enabled
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
@@ -135,7 +139,8 @@ def test_disable_report(service_3_setup, is_diagnostic_report):
     assert not report.enabled
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
@@ -168,7 +173,8 @@ def test_structure_report(service_3_setup, is_diagnostic_report):
         assert pid == ref_pid
 
 
-@pytest.mark.parametrize("service_3_setup, is_diagnostic_report",
+@pytest.mark.parametrize(
+    "service_3_setup, is_diagnostic_report",
     [
         ("service_3_setup", True),
         ("service_3_setup", False),
