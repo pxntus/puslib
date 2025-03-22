@@ -417,7 +417,6 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet
 
     @classmethod
-
     def create(cls, **kwargs):
         """A factory method to create a PUS TC packet instance.
 
