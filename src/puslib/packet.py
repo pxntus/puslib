@@ -1,25 +1,32 @@
+"""Packet handling.
+
+Implementations of the following packet formats:
+
+- Space packet protocol
+- PUS TM packet protocol
+- PUS TC packet protocol
+"""
+
 import struct
 from enum import IntEnum, IntFlag
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, SupportsBytes
 
 from .exceptions import CrcException, IncompletePacketException, InvalidPacketException
 from .time import CucTime
 from .crc_ccitt import calculate as crc_ccitt_calculate
 
-CCSDS_PACKET_VERSION_NUMBER = 0
-CCSDS_MAX_PACKET_SIZE = 65542
+_CCSDS_PACKET_VERSION_NUMBER = 0
+_CCSDS_MAX_PACKET_SIZE = 65542
 
-TM_PACKET_PUS_VERSION_NUMBER = 2
-TC_PACKET_PUS_VERSION_NUMBER = 2
-
-IDLE_APID = 0b11111111111
+_TM_PACKET_PUS_VERSION_NUMBER = 2
+_TC_PACKET_PUS_VERSION_NUMBER = 2
 
 _COMMON_SEC_HDR_STRUCT = struct.Struct('>BBB')
 _PEC_FIELD_SIZE = 2
 
 
-def _validate_int_field(field_name, val, min_val, max_val):
+def _validate_int_field(field_name: str, val: int, min_val: int, max_val: int):
     if isinstance(val, int):
         if not min_val <= val <= max_val:
             raise InvalidPacketException(f"{field_name} must be between {min_val} and {max_val}")
@@ -27,7 +34,7 @@ def _validate_int_field(field_name, val, min_val, max_val):
         raise TypeError(f"{field_name} must be an integer")
 
 
-def _validate_bool_field(field_name, val):
+def _validate_bool_field(field_name: str, val: bool):
     if not isinstance(val, bool):
         raise TypeError(f"{field_name} must be a bool")
 
@@ -38,15 +45,16 @@ class PacketType(IntEnum):
 
 
 class SequenceFlag(IntEnum):
+    """Sequence flags of the primary header of the space packet protocol."""
     CONTINUATION_SEGMENT = 0b00
     FIRST_SEGMENT = 0b01
     LAST_SEGMENT = 0b10
     UNSEGMENTED = 0b11
 
 
-@dataclass
+@dataclass(slots=True)
 class _PacketPrimaryHeader:
-    packet_version_number: int = CCSDS_PACKET_VERSION_NUMBER
+    packet_version_number: int = _CCSDS_PACKET_VERSION_NUMBER
 
     # Packet ID
     packet_type: PacketType = PacketType.TM
@@ -61,12 +69,20 @@ class _PacketPrimaryHeader:
 
 
 class CcsdsSpacePacket:
+    """Represent a CCSDS space packet."""
+
+    _IDLE_APID = 0b11111111111
     _CCSDS_HDR_STRUCT = struct.Struct('>HHH')
 
-    def __init__(self, has_pec=True):
-        self.header = _PacketPrimaryHeader()
+    def __init__(self, has_pec: bool = True):
+        """Create a space packet instance.
+
+        Keyword Arguments:
+            has_pec -- true if a PEC field should be present (default: {True})
+        """
+        self.header: _PacketPrimaryHeader = _PacketPrimaryHeader()
         self.secondary_header = None
-        self.payload = None
+        self.payload: SupportsBytes | None = None
         self._has_pec = has_pec
 
     def __len__(self):
@@ -82,18 +98,23 @@ class CcsdsSpacePacket:
         return pkt_info
 
     @property
-    def packet_type(self):
+    def packet_type(self) -> PacketType:
         return self.header.packet_type
 
     @property
-    def apid(self):
+    def apid(self) -> int:
         return self.header.apid
 
     @property
-    def has_pec(self):
+    def has_pec(self) -> bool:
         return self._has_pec
 
-    def serialize(self):
+    def serialize(self) -> SupportsBytes:
+        """Serialize the packet to its binary format.
+
+        Returns:
+            byte array
+        """
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
         ccsds_header = self._CCSDS_HDR_STRUCT.pack(packet_id, seq_ctrl, self.header.data_length)
@@ -103,19 +124,31 @@ class CcsdsSpacePacket:
             packet_data_field = self.payload
         return ccsds_header + packet_data_field
 
-    def request_id(self):
+    def request_id(self) -> SupportsBytes:
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
         return struct.pack('>HH', packet_id, seq_ctrl)
 
     @classmethod
-    def deserialize(cls, buffer, has_pec=True, validate_pec=True):
+    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True) -> "CcsdsSpacePacket":
+        """Deserialize a packet from its binary format to a packet object.
+
+        Arguments:
+            buffer -- packet in binary format
+
+        Keyword Arguments:
+            has_pec -- true if a PEC field is expected to be present (default: {True})
+            validate_pec -- true if PEC field should be verified during operation (default: {True})
+
+        Returns:
+            packet object
+        """
         packet_id, seq_ctrl, data_length = cls._CCSDS_HDR_STRUCT.unpack_from(buffer)
 
         packet_size = cls._CCSDS_HDR_STRUCT.size + data_length + 1
         if packet_size > len(buffer):
             raise IncompletePacketException()
-        if packet_size > CCSDS_MAX_PACKET_SIZE:
+        if packet_size > _CCSDS_MAX_PACKET_SIZE:
             raise InvalidPacketException("Packet too large")
         if has_pec and validate_pec:
             mem_view = memoryview(buffer)
@@ -132,9 +165,23 @@ class CcsdsSpacePacket:
 
     @classmethod
     def create(cls, **kwargs):
+        """A factory method to create a CCSDS space packet instance.
+
+        Keyword Arguments:
+            packet_version_number -- CCSDS packet version (default: {0})
+            packet_type -- packet type (default: {PacketType.TM})
+            secondary_header_flag -- secondary header flag (default: {True})
+            apid -- application ID (default: {2047})
+            seq_flags -- sequence flags (default: {SequenceFlag.UNSEGMENTED})
+            seq_count_or_name -- sequence count (default: {0})
+            data -- user data field (default: {None})
+
+        Returns:
+            packet object
+        """
         packet = cls(kwargs.get('has_pec', True))
 
-        packet_version_number = kwargs.get('packet_version_number', CCSDS_PACKET_VERSION_NUMBER)
+        packet_version_number = kwargs.get('packet_version_number', _CCSDS_PACKET_VERSION_NUMBER)
         _validate_int_field('Packet version number', packet_version_number, 0, 0)
         packet.header.packet_version_number = packet_version_number
 
@@ -147,7 +194,7 @@ class CcsdsSpacePacket:
         _validate_bool_field('Secondary header flag', secondary_header_flag)
         packet.header.secondary_header_flag = secondary_header_flag
 
-        apid = kwargs.get('apid', IDLE_APID)
+        apid = kwargs.get('apid', cls._IDLE_APID)
         _validate_int_field('apid', apid, 0, 0x7ff)
         packet.header.apid = apid
 
@@ -168,7 +215,7 @@ class CcsdsSpacePacket:
 
         data_length = kwargs.get('data_length', None)
         data_size_except_source_data = kwargs.get('secondary_header_length', 0) + (2 if packet.has_pec else 0)
-        max_data_size = CCSDS_MAX_PACKET_SIZE - cls._CCSDS_HDR_STRUCT.size - data_size_except_source_data
+        max_data_size = _CCSDS_MAX_PACKET_SIZE - cls._CCSDS_HDR_STRUCT.size - data_size_except_source_data
         if data_length:
             min_data_size = data_size_except_source_data
             _validate_int_field('Data length', data_length + 1, min_data_size, max_data_size)
@@ -186,6 +233,7 @@ class CcsdsSpacePacket:
 
 
 class AckFlag(IntFlag):
+    """TC acknowledgement flags."""
     NONE = 0b0000
     ACCEPTANCE = 0b0001
     START_OF_EXECUTION = 0b0010
@@ -193,9 +241,9 @@ class AckFlag(IntFlag):
     COMPLETION = 0b1000
 
 
-@dataclass
+@dataclass(slots=True)
 class _PacketSecondaryHeaderTc:
-    pus_version: int = TC_PACKET_PUS_VERSION_NUMBER
+    pus_version: int = _TC_PACKET_PUS_VERSION_NUMBER
     ack_flags: AckFlag = AckFlag.NONE
     service_type: int = 0
     service_subtype: int = 0
@@ -203,9 +251,11 @@ class _PacketSecondaryHeaderTc:
 
 
 class PusTcPacket(CcsdsSpacePacket):
+    """Represent a PUS TC packet."""
+
     _SOURCE_FIELD_SIZE = 2
 
-    def __init__(self, has_pec=True):
+    def __init__(self, has_pec: bool = True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTc()
 
@@ -227,26 +277,34 @@ class PusTcPacket(CcsdsSpacePacket):
         return pkt_info
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.header.seq_count_or_name
 
-    def ack(self, ack_flag):
+    def ack(self, ack_flag: AckFlag) -> bool:
+        """Check if TC expects a specific ack.
+
+        Arguments:
+            ack_flag -- acknowledge flag to check for
+
+        Returns:
+            true if ack is expected
+        """
         return ack_flag in self.secondary_header.ack_flags
 
     @property
-    def service(self):
+    def service(self) -> int:
         return self.secondary_header.service_type
 
     @property
-    def subservice(self):
+    def subservice(self) -> int:
         return self.secondary_header.service_subtype
 
     @property
-    def source(self):
+    def source(self) -> int | None:
         return self.secondary_header.source
 
     @property
-    def app_data(self):
+    def app_data(self) -> SupportsBytes:
         return self.payload
 
     def serialize(self):
@@ -263,6 +321,9 @@ class PusTcPacket(CcsdsSpacePacket):
                 ccsds_sec_header_source = self.secondary_header.source.to_bytes(self._SOURCE_FIELD_SIZE, byteorder='big')
             else:
                 ccsds_sec_header_source = bytes()
+        else:
+            ccsds_sec_header_source = bytes()
+            ccsds_sec_header_static = bytes()
 
         # Packet error control
         packet_without_pec = ccsds_header + (ccsds_sec_header_static + ccsds_sec_header_source if self.header.secondary_header_flag else bytes()) + (self.payload if self.header.secondary_header_flag else bytes())
@@ -276,7 +337,21 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer, has_source_field=True, has_pec=True, validate_fields=True, validate_pec=True):
+    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True, has_source_field: bool = True, validate_fields: bool = True):
+        """Deserialize a packet from its binary format to a packet object.
+
+        Arguments:
+            buffer -- packet in binary format
+
+        Keyword Arguments:
+            has_pec -- true if a PEC field is expected to be present (default: {True})
+            validate_pec -- true if PEC field should be verified during operation (default: {True})
+            has_source_field -- true if a source ID field is expected to be presented (default: {True})
+            validate_fields -- true if the packet object creation should be validated (default: {True})
+
+        Returns:
+            packet object
+        """
         packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
@@ -310,19 +385,19 @@ class PusTcPacket(CcsdsSpacePacket):
 
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
-                packet_version_number=packet_version_number,
-                packet_type=packet_type,
-                secondary_header_flag=secondary_header_flag,
-                apid=apid,
-                seq_flags=seq_flags,
-                name=seq_count_or_name,
-                data_length=data_length,
-                pus_version=pus_version,
-                ack_flags=ack_flags,
-                service_type=service_type,
-                service_subtype=service_subtype,
-                source=source,
-                data=app_data)
+                                packet_version_number=packet_version_number,
+                                packet_type=packet_type,
+                                secondary_header_flag=secondary_header_flag,
+                                apid=apid,
+                                seq_flags=seq_flags,
+                                name=seq_count_or_name,
+                                data_length=data_length,
+                                pus_version=pus_version,
+                                ack_flags=ack_flags,
+                                service_type=service_type,
+                                service_subtype=service_subtype,
+                                source=source,
+                                data=app_data)
         else:
             packet = cls(has_pec)
             packet.header.packet_version_number = packet_version_number
@@ -342,7 +417,27 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet
 
     @classmethod
+
     def create(cls, **kwargs):
+        """A factory method to create a PUS TC packet instance.
+
+        Keyword Arguments:
+            packet_version_number -- CCSDS packet version (default: {0})
+            packet_type -- packet type (default: {PacketType.TM})
+            secondary_header_flag -- secondary header flag (default: {True})
+            apid -- application ID (default: {2047})
+            seq_flags -- sequence flags (default: {SequenceFlag.UNSEGMENTED})
+            seq_count_or_name -- sequence count (default: {0})
+            pus_version -- PUS version (default: {2})
+            ack_flags -- acknowledge flags (default: {0b1111})
+            service_type - service type (default: {None})
+            service_subtype - message subtype (default: {None})
+            source -- source ID (default: {None})
+            data -- user data field (default: {None})
+
+        Returns:
+            packet object
+        """
         source = kwargs.get('source', None)
 
         if kwargs.get('secondary_header_flag', True):
@@ -353,7 +448,7 @@ class PusTcPacket(CcsdsSpacePacket):
         packet = super(cls, cls).create(**kwargs)
 
         if packet.header.secondary_header_flag:
-            pus_version = kwargs.get('pus_version', TC_PACKET_PUS_VERSION_NUMBER)
+            pus_version = kwargs.get('pus_version', _TC_PACKET_PUS_VERSION_NUMBER)
             if pus_version is not None:
                 _validate_int_field('TC packet PUS version', pus_version, 0, 0b1111)
                 packet.secondary_header.pus_version = pus_version
@@ -380,22 +475,24 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet
 
 
-@dataclass
+@dataclass(slots=True)
 class _PacketSecondaryHeaderTm:
-    pus_version: Optional[int] = TM_PACKET_PUS_VERSION_NUMBER
-    spacecraft_time_ref_status: Optional[int] = None
-    service_type: Optional[int] = None
-    service_subtype: Optional[int] = None
+    pus_version: int = _TM_PACKET_PUS_VERSION_NUMBER
+    spacecraft_time_ref_status: int = 0
+    service_type: int = 0
+    service_subtype: int = 0
     msg_type_counter: Optional[int] = None
     destination: Optional[int] = None
-    time: Optional[CucTime] = None
+    time: CucTime | None = None
 
 
 class PusTmPacket(CcsdsSpacePacket):
+    """Represent a PUS TM packet."""
+
     _MSG_TYPE_COUNTER_FIELD_SIZE = 2
     _DESTINATION_FIELD_SIZE = 2
 
-    def __init__(self, has_pec=True):
+    def __init__(self, has_pec: bool = True):
         super().__init__(has_pec)
         self.secondary_header = _PacketSecondaryHeaderTm()
 
@@ -421,31 +518,31 @@ class PusTmPacket(CcsdsSpacePacket):
         return pkt_info
 
     @property
-    def seq_count(self):
+    def seq_count(self) -> int:
         return self.header.seq_count_or_name
 
     @property
-    def service(self):
+    def service(self) -> int:
         return self.secondary_header.service_type
 
     @property
-    def subservice(self):
+    def subservice(self) -> int:
         return self.secondary_header.service_subtype
 
     @property
-    def counter(self):
+    def counter(self) -> int | None:
         return self.secondary_header.msg_type_counter
 
     @property
-    def destination(self):
+    def destination(self) -> int | None:
         return self.secondary_header.destination
 
     @property
-    def time(self):
+    def time(self) -> CucTime:
         return self.secondary_header.time
 
     @property
-    def source_data(self):
+    def source_data(self) -> SupportsBytes:
         return self.payload
 
     def serialize(self):
@@ -478,7 +575,23 @@ class PusTmPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer, cuc_time=None, has_type_counter_field=True, has_destination_field=True, has_pec=True, validate_fields=True, validate_pec=True):
+    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True, cuc_time: CucTime | None = None, has_type_counter_field: bool = True, has_destination_field: bool = True, validate_fields: bool = True):
+        """Deserialize a packet from its binary format to a packet object.
+
+        Arguments:
+            buffer -- packet in binary format
+
+        Keyword Arguments:
+            has_pec -- true if a PEC field is expected to be present (default: {True})
+            validate_pec -- true if PEC field should be verified during operation (default: {True})
+            cuc_time -- CUC time object containing expected format, e.g., when no preamble is present (default: {None})
+            has_type_counter_field -- true if a message type counter field is expected to be present (default: {True})
+            has_destination_field -- true if a destination ID field is expected to be present (default: {True})
+            validate_fields -- true if the packet object creation should be validated (default: {True})
+
+        Returns:
+            packet object
+        """
         packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
@@ -511,8 +624,8 @@ class PusTmPacket(CcsdsSpacePacket):
             else:
                 try:
                     cuc_time = CucTime.deserialize(buffer[offset:])
-                except ValueError:
-                    raise IncompletePacketException()
+                except ValueError as ex:
+                    raise IncompletePacketException() from ex
                 data_field_except_source_length += len(cuc_time)
             offset += len(cuc_time)
         else:
@@ -534,21 +647,21 @@ class PusTmPacket(CcsdsSpacePacket):
 
         if validate_fields:
             packet = cls.create(has_pec=has_pec,
-                packet_version_number=packet_version_number,
-                packet_type=packet_type,
-                secondary_header_flag=secondary_header_flag,
-                apid=apid,
-                seq_flags=seq_flags,
-                seq_count=seq_count_or_name,
-                data_length=data_length,
-                pus_version=pus_version,
-                spacecraft_time_ref_status=spacecraft_time_ref_status,
-                service_type=service_type,
-                service_subtype=service_subtype,
-                msg_type_counter=msg_type_counter,
-                destination=destination,
-                time=cuc_time,
-                data=source_data)
+                                packet_version_number=packet_version_number,
+                                packet_type=packet_type,
+                                secondary_header_flag=secondary_header_flag,
+                                apid=apid,
+                                seq_flags=seq_flags,
+                                seq_count=seq_count_or_name,
+                                data_length=data_length,
+                                pus_version=pus_version,
+                                spacecraft_time_ref_status=spacecraft_time_ref_status,
+                                service_type=service_type,
+                                service_subtype=service_subtype,
+                                msg_type_counter=msg_type_counter,
+                                destination=destination,
+                                time=cuc_time,
+                                data=source_data)
         else:
             packet = cls(has_pec)
             packet.header.packet_version_number = packet_version_number
@@ -571,6 +684,27 @@ class PusTmPacket(CcsdsSpacePacket):
 
     @classmethod
     def create(cls, **kwargs):
+        """A factory method to create a PUS TM packet instance.
+
+        Keyword Arguments:
+            packet_version_number -- CCSDS packet version (default: {0})
+            packet_type -- packet type (default: {PacketType.TM})
+            secondary_header_flag -- secondary header flag (default: {True})
+            apid -- application ID (default: {2047})
+            seq_flags -- sequence flags (default: {SequenceFlag.UNSEGMENTED})
+            seq_count_or_name -- sequence count (default: {0})
+            pus_version -- PUS version (default: {2})
+            spacecraft_time_ref_status -- spacecraft time reference status (default: {0})
+            service_type - service type (default: {None})
+            service_subtype - message subtype (default: {None})
+            msg_type_counter - message type counter (default: {None})
+            destination -- destination ID (default: {None})
+            time -- timestamp (default: {None})
+            data -- user data field (default: {None})
+
+        Returns:
+            packet object
+        """
         msg_type_counter = kwargs.get('msg_type_counter', None)
         destination = kwargs.get('destination', None)
         time = kwargs.get('time', None)
@@ -583,7 +717,7 @@ class PusTmPacket(CcsdsSpacePacket):
         packet = super(cls, cls).create(**kwargs)
 
         if packet.header.secondary_header_flag:
-            pus_version = kwargs.get('pus_version', TM_PACKET_PUS_VERSION_NUMBER)
+            pus_version = kwargs.get('pus_version', _TM_PACKET_PUS_VERSION_NUMBER)
             if pus_version is not None:
                 _validate_int_field('TM packet PUS version', pus_version, 0, 0b1111)
                 packet.secondary_header.pus_version = pus_version
