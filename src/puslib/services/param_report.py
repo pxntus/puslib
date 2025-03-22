@@ -1,7 +1,7 @@
 import struct
 from collections import OrderedDict
 
-from .. import get_policy
+from puslib import get_policy
 
 
 class ParamReport:
@@ -15,7 +15,16 @@ class ParamReport:
 
     where number of parameter values is deduced from report ID.
     """
-    def __init__(self, sid, enabled=True, params_in_report=None):
+    def __init__(self, sid: int, enabled: bool = True, params_in_report: dict[int, object] | None = None):
+        """Create a parameter report.
+
+        Arguments:
+            sid -- structure ID
+
+        Keyword Arguments:
+            enabled -- report enabled at startup (default: {True})
+            params_in_report -- parameters part of report (default: {None})
+        """
         self._id = sid
         self._params = OrderedDict()
         self._enabled = enabled
@@ -30,14 +39,19 @@ class ParamReport:
             yield param_id, param
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._id
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         return self._enabled
 
-    def append(self, params):
+    def append(self, params: dict[int, object]):
+        """Append parameters to report.
+
+        Arguments:
+            params -- parameters to append to report
+        """
         if params is not None:
             self._params = {**self._params, **params}
 
@@ -54,7 +68,11 @@ class ParamReport:
         return self._cached_struct.pack(*args)
 
     def enable(self):
+        """Enable report.
+        """
         self._enabled = True
 
     def disable(self):
+        """Disable report.
+        """
         self._enabled = False

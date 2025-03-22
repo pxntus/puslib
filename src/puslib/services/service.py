@@ -1,6 +1,10 @@
 import queue
 from enum import Enum
 
+from puslib.ident import PusIdent
+from puslib.packet import PusTcPacket
+from puslib.streams.stream import OutputStream
+
 
 class PusServiceType(bytes, Enum):
     def __new__(cls, service_number, description):
@@ -35,31 +39,39 @@ class PusServiceType(bytes, Enum):
 
 
 class PusService:
-    def __init__(self, service_type, ident=None, pus_service_1=None, tm_output_stream=None):
+    """Base class for PUS services."""
+    def __init__(self, service_type: PusServiceType, ident: PusIdent | None = None, pus_service_1=None, tm_output_stream: OutputStream | None = None):
         self._service_type = service_type
-        self._subservices = dict()
+        self._subservices = {}
         self._ident = ident
         self._incoming_tc_queue = queue.SimpleQueue()
         self._tm_output_stream = tm_output_stream
         self._pus_service_1 = pus_service_1
 
     @property
-    def service(self):
+    def service(self) -> int:
         return self._service_type.value
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._service_type.name
 
     @property
-    def description(self):
+    def description(self) -> str:
         return self._service_type.description
 
-    def enqueue(self, tc_packet):
+    def enqueue(self, tc_packet: PusTcPacket):
+        """Enqueue an incoming PUS TC packet.
+
+        Arguments:
+            tc_packet -- PUS TC packet
+        """
         if tc_packet.apid == self._ident.apid and tc_packet.service == self.service and tc_packet.subservice in self._subservices:
             self._incoming_tc_queue.put(tc_packet)
 
     def process(self):
+        """Process queued PUS TC packets.
+        """
         while not self._incoming_tc_queue.empty():
             tc_packet = self._incoming_tc_queue.get()
             subservice_handler = self._subservices[tc_packet.subservice]
