@@ -3,7 +3,8 @@ from functools import partial
 from puslib import time
 from puslib.packet import PusTcPacket
 from puslib.parameter import UInt8Parameter, UInt16Parameter
-from puslib import PusPolicy, get_policy, set_policy
+from puslib.pus_policy import PusPolicy
+from puslib import get_policy, set_policy
 
 
 def test_factory_functions():
