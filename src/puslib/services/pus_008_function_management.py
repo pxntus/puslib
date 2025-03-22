@@ -1,7 +1,6 @@
 import struct
-from collections import namedtuple
 from collections.abc import Callable
-from typing import SupportsBytes, Sequence
+from typing import SupportsBytes, Sequence, NamedTuple
 
 from puslib import get_policy
 from puslib.ident import PusIdent
@@ -10,7 +9,10 @@ from puslib.services import RequestVerification
 from puslib.services.service import PusService, PusServiceType
 from puslib.services.error_codes import CommonErrorCode
 
-_FuncDef = namedtuple('FuncDef', ['callback', 'arg_types'])
+
+class _FuncDef(NamedTuple):
+    callback: Callable
+    arg_types: Sequence[Parameter]
 
 
 class FunctionManagement(PusService):
