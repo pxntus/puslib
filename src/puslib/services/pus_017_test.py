@@ -1,5 +1,5 @@
-from .. import get_policy
-from .service import PusService, PusServiceType
+from puslib import get_policy
+from puslib.services.service import PusService, PusServiceType
 
 
 class Test(PusService):

@@ -2,10 +2,10 @@ import struct
 from functools import partial
 from collections import OrderedDict
 
-from .service import PusService, PusServiceType
-from .param_report import ParamReport
-from .error_codes import CommonErrorCode
-from .. import get_policy
+from puslib.services.service import PusService, PusServiceType
+from puslib.services.param_report import ParamReport
+from puslib.services.error_codes import CommonErrorCode
+from puslib import get_policy
 
 
 class Report(ParamReport):

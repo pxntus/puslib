@@ -5,7 +5,7 @@ from typing import SupportsBytes
 
 import bitstring
 
-from .exceptions import InvalidTimeFormat
+from puslib.exceptions import InvalidTimeFormat
 
 TAI_EPOCH = datetime(year=1958, month=1, day=1)  # International Atomic Time (TAI) epoch
 

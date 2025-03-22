@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from .. import get_policy
-from .stream import InputStream
+from puslib import get_policy
+from puslib.streams.stream import InputStream
 
 
 class FileInput(InputStream):

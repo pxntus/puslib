@@ -1,9 +1,9 @@
 from functools import partial
 from dataclasses import dataclass
 
-from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
-from .time import CucTime  # noqa: E402
-from .parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
+from puslib.packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
+from puslib.time import CucTime  # noqa: E402
+from puslib.parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
 
 __version__ = "0.2.5"
 

@@ -1,9 +1,9 @@
 from enum import IntEnum
 
-from . import services
-from .ident import PusIdent
-from .exceptions import TcPacketRoutingError
-from .services.service import PusServiceType
+from puslib import services
+from puslib.services.service import PusServiceType
+from puslib.ident import PusIdent
+from puslib.exceptions import TcPacketRoutingError
 
 
 def periodic(scheduler, interval, priority, action, actionargs=()):

@@ -1,9 +1,9 @@
 import struct
 from collections import namedtuple
 
-from .. import get_policy
-from .service import PusService, PusServiceType
-from .error_codes import CommonErrorCode
+from puslib import get_policy
+from puslib.services.service import PusService, PusServiceType
+from puslib.services.error_codes import CommonErrorCode
 
 _FuncDef = namedtuple('FuncDef', ['callback', 'arg_types'])
 

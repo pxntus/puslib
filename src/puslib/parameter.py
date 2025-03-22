@@ -10,8 +10,8 @@ Relevant for the following PUS services:
 import struct
 from enum import IntEnum
 
-from .time import CucTime
-from .packet import PusTcPacket
+from puslib.time import CucTime
+from puslib.packet import PusTcPacket
 
 
 class PacketFieldType(IntEnum):

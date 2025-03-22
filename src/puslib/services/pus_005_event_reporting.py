@@ -2,9 +2,9 @@ import struct
 from functools import partial
 from enum import IntEnum
 
-from .service import PusService, PusServiceType
-from .param_report import ParamReport
-from .. import get_policy
+from puslib.services.service import PusService, PusServiceType
+from puslib.services.param_report import ParamReport
+from puslib import get_policy
 
 
 class Severity(IntEnum):

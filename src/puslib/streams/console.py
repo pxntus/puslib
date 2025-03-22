@@ -1,4 +1,4 @@
-from .stream import OutputStream
+from puslib.streams.stream import OutputStream
 
 
 class ConsoleOutput(OutputStream):

@@ -1,6 +1,6 @@
 from queue import SimpleQueue
 
-from .stream import OutputStream
+from puslib.streams.stream import OutputStream
 
 
 class QueuedOutput(OutputStream):
