@@ -1,3 +1,11 @@
+"""Parameter types to be used for parametric system in PUS.
+
+Relevant for the following PUS services:
+
+- housekeeping service
+- event reporting service
+- parameter management service
+"""
 
 import struct
 from enum import IntEnum
@@ -22,9 +30,13 @@ class PacketFieldType(IntEnum):
 
 
 class _Parameter:
+    """Represent a PUS parameter.
+
+    Base class for concrete child classes.
+    """
     _type_code = None
 
-    def __init__(self, format_code, init_value=None):
+    def __init__(self, format_code: PacketFieldType, init_value=None):
         self._format_code = format_code
         if init_value:
             self._validate(init_value)
@@ -47,15 +59,32 @@ class _Parameter:
                 event(old_value=old_value, new_value=self._value)
 
     @property
-    def ptc(self):
+    def ptc(self) -> int:
+        """Return the packet field type code of the parameter.
+
+        Returns:
+            packet field type code (PTC)
+        """
         return self._type_code
 
     @property
-    def pfc(self):
+    def pfc(self) -> int:
+        """Return the packet field format code of the parameter.
+
+        Returns:
+            packet field format code (PFC)
+        """
         return self._format_code
 
     @property
-    def format(self):
+    def format(self) -> str:
+        """Return the struct format string of the parameter.
+
+        This is used to effectively combine multiple parameters in one pack operation.
+
+        Returns:
+            struct format string
+        """
         raise NotImplementedError
 
     @property
@@ -63,6 +92,11 @@ class _Parameter:
         return struct.calcsize(self.format)
 
     def subscribe(self, event_handler):
+        """Subscribe to the parameter.
+
+        Arguments:
+            event_handler -- event handler to receive updates
+        """
         self._events.append(event_handler)
 
     def to_bytes(self):
@@ -284,7 +318,7 @@ class OctetStringParameter(ArrayParameter):
         super().__init__(format_code=0, init_value=init_value)
 
     @property
-    def format(self, length_type):
+    def format(self, length_type):  # pylint: disable=arguments-differ
         return f"{length_type.format + len(self.value)}s"
 
     @property
