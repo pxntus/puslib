@@ -1,17 +1,40 @@
 import struct
+from typing import SupportsBytes, Type
 
 from puslib import get_policy
+from puslib.ident import PusIdent
+from puslib.parameter import Parameter
+from puslib.streams.stream import OutputStream
+from puslib.services import RequestVerification
 from puslib.services.service import PusService, PusServiceType
 
 
 class ParameterManagement(PusService):
-    def __init__(self, ident, pus_service_1, tm_output_stream, params):
+    """PUS service 20: Parameter management service."""
+
+    def __init__(self, ident: PusIdent, pus_service_1: RequestVerification, tm_output_stream: OutputStream, params: dict[int, Type[Parameter]]):
+        """Create a PUS service instance.
+
+        Arguments:
+            ident -- PUS identifier
+            pus_service_1 -- PUS service 1 instance
+            tm_output_stream -- output stream
+            params -- parameters to manage
+        """
         super().__init__(PusServiceType.ONBOARD_PARAMETER_MANAGEMENT, ident, pus_service_1, tm_output_stream)
         super()._register_sub_service(1, self._report_parameter_values)
         super()._register_sub_service(3, self._set_parameter_values)
         self._params = params
 
-    def _report_parameter_values(self, app_data):
+    def _report_parameter_values(self, app_data: SupportsBytes):
+        """Handle report parameter values request.
+
+        Arguments:
+            app_data -- application data of TC request
+
+        Returns:
+            subservice status
+        """
         num_ids = get_policy().function_management.count_type()
         param_id_dummy = get_policy().common.param_id_type()
         try:
@@ -40,7 +63,15 @@ class ParameterManagement(PusService):
         self._tm_output_stream.write(packet)
         return True
 
-    def _set_parameter_values(self, app_data):
+    def _set_parameter_values(self, app_data: SupportsBytes):
+        """Handle set parameter values request.
+
+        Arguments:
+            app_data -- application data of TC request
+
+        Returns:
+            subservice status
+        """
         try:
             num_values = get_policy().function_management.count_type().from_bytes(app_data)
             new_values = {}

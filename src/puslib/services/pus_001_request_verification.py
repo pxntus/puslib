@@ -1,7 +1,11 @@
 from enum import IntEnum
+from typing import SupportsBytes
 
 from puslib import get_policy
 from puslib.packet import AckFlag
+from puslib.ident import PusIdent
+from puslib.packet import PusTcPacket
+from puslib.streams.stream import OutputStream
 from puslib.services.service import PusService, PusServiceType
 from puslib.services.error_codes import CommonErrorCode
 
@@ -18,7 +22,15 @@ class _SubService(IntEnum):
 
 
 class RequestVerification(PusService):
-    def __init__(self, ident, tm_output_stream):
+    """PUS service 1: Request verification service."""
+
+    def __init__(self, ident: PusIdent, tm_output_stream: OutputStream):
+        """Create a PUS service instance.
+
+        Arguments:
+            ident -- PUS identifier
+            tm_output_stream -- output stream
+        """
         super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_output_stream=tm_output_stream)
 
     def enqueue(self, tc_packet):
@@ -27,7 +39,17 @@ class RequestVerification(PusService):
     def process(self):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
-    def accept(self, packet, success=True, failure_code=None, failure_data=None):
+    def accept(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+        """Generate acceptance verification report.
+
+        Arguments:
+            packet -- PUS TC packet
+
+        Keyword Arguments:
+            success -- true if acceptance successful, otherwise false (default: {True})
+            failure_code -- failure code (default: {None})
+            failure_data -- failure data (default: {None})
+        """
         if not packet.ack(AckFlag.ACCEPTANCE):
             return
         self._generate_report(
@@ -37,7 +59,17 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def start(self, packet, success=True, failure_code=None, failure_data=None):
+    def start(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+        """Generate start of execution verification report.
+
+        Arguments:
+            packet -- PUS TC packet
+
+        Keyword Arguments:
+            success -- true if start of execution successful, otherwise false (default: {True})
+            failure_code -- failure code (default: {None})
+            failure_data -- failure data (default: {None})
+        """
         if not packet.ack(AckFlag.START_OF_EXECUTION):
             return
         self._generate_report(
@@ -47,7 +79,17 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def progress(self, packet, success=True, failure_code=None, failure_data=None):
+    def progress(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+        """Generate progress of execution verification report.
+
+        Arguments:
+            packet -- PUS TC packet
+
+        Keyword Arguments:
+            success -- true if progress of execution successful, otherwise false (default: {True})
+            failure_code -- failure code (default: {None})
+            failure_data -- failure data (default: {None})
+        """
         if not packet.ack(AckFlag.PROGRESS):
             return
         self._generate_report(
@@ -57,7 +99,17 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def complete(self, packet, success=True, failure_code=None, failure_data=None):
+    def complete(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+        """Generate completion of execution verification report.
+
+        Arguments:
+            packet -- PUS TC packet
+
+        Keyword Arguments:
+            success -- true if completion of executionn successful, otherwise false (default: {True})
+            failure_code -- failure code (default: {None})
+            failure_data -- failure data (default: {None})
+        """
         if not packet.ack(AckFlag.COMPLETION):
             return
         self._generate_report(
@@ -67,7 +119,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def _generate_report(self, packet, subservice, success, failure_code, failure_data):
+    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: SupportsBytes | None):
         payload = packet.request_id()
         if not success:
             if not failure_code:

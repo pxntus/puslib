@@ -29,7 +29,7 @@ class PacketFieldType(IntEnum):
     PACKET = 12
 
 
-class _Parameter:
+class Parameter:
     """Represent a PUS parameter.
 
     Base class for concrete child classes.
@@ -105,7 +105,7 @@ class _Parameter:
         raise NotImplementedError
 
 
-class BoolParameter(_Parameter):
+class BoolParameter(Parameter):
     _type_code = PacketFieldType.BOOLEAN
     _fmt = '>?'
     _struct = struct.Struct(_fmt)
@@ -129,7 +129,7 @@ class BoolParameter(_Parameter):
         return cls._struct.unpack(buffer)[0]
 
 
-class EnumParameter(_Parameter):
+class EnumParameter(Parameter):
     _type_code = PacketFieldType.ENUMERATED
 
     def __init__(self, init_value=0, bitsize=8):
@@ -156,7 +156,7 @@ class EnumParameter(_Parameter):
         return int.from_bytes(buffer[:value_size], byteorder='big')
 
 
-class NumericParameter(_Parameter):
+class NumericParameter(Parameter):
     _value_size = 0
     _fmt = None
 
@@ -303,7 +303,7 @@ class Real64Parameter(_RealParameter):
         super().__init__(format_code=2, init_value=init_value)
 
 
-class ArrayParameter(_Parameter):
+class ArrayParameter(Parameter):
     def _validate(self, value):
         raise NotImplementedError
 
@@ -330,7 +330,7 @@ class OctetStringParameter(ArrayParameter):
         raise NotImplementedError
 
 
-class TimeParameter(_Parameter):
+class TimeParameter(Parameter):
     def __init__(self, init_value=None):
         super().__init__(format_code=0, init_value=init_value)
 
@@ -363,7 +363,7 @@ class RelativeTimeParameter(TimeParameter):
         raise NotImplementedError
 
 
-class PacketParameter(_Parameter):
+class PacketParameter(Parameter):
     _type_code = PacketFieldType.PACKET
 
     def _validate(self, value):

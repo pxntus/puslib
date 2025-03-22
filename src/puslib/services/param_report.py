@@ -1,7 +1,9 @@
 import struct
 from collections import OrderedDict
+from typing import Type
 
 from puslib import get_policy
+from puslib.parameter import Parameter
 
 
 class ParamReport:
@@ -15,7 +17,7 @@ class ParamReport:
 
     where number of parameter values is deduced from report ID.
     """
-    def __init__(self, sid: int, enabled: bool = True, params_in_report: dict[int, object] | None = None):
+    def __init__(self, sid: int, enabled: bool = True, params_in_report: dict[int, Type[Parameter]] | None = None):
         """Create a parameter report.
 
         Arguments:
@@ -52,7 +54,7 @@ class ParamReport:
     def enabled(self) -> bool:
         return self._enabled
 
-    def append(self, params: dict[int, object]):
+    def append(self, params: dict[int, Type[Parameter]]):
         """Append parameters to report.
 
         Arguments:
