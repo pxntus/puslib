@@ -75,6 +75,19 @@ def test_tc_packet_length(args, length):
     assert len(packet) == length
 
 
+@pytest.mark.parametrize("args, acks_activated, acks_deactivated", [
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.NONE, PUS_SERVICE, PUS_SUBSERVICE, None, None, False), (), (AckFlag.ACCEPTANCE, AckFlag.START_OF_EXECUTION, AckFlag.PROGRESS, AckFlag.COMPLETION)),
+    (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE | AckFlag.COMPLETION, PUS_SERVICE, PUS_SUBSERVICE, None, b'', True), (AckFlag.ACCEPTANCE, AckFlag.COMPLETION), (AckFlag.START_OF_EXECUTION, AckFlag.PROGRESS)),
+])
+def test_tc_ack(args, acks_activated, acks_deactivated):
+    args_to_pass = {k: v for k, v in args._asdict().items() if v is not None}
+    packet = PusTcPacket.create(**args_to_pass)
+    for ack in acks_activated:
+        assert packet.ack(ack)
+    for ack in acks_deactivated:
+        assert not packet.ack(ack)
+
+
 @pytest.mark.parametrize("args, binary", [
     (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, b'', False), bytes.fromhex('1810c0500002210801')),
     (TcPacketArgs(APID, SEQ_COUNT_OR_NAME, None, AckFlag.ACCEPTANCE, PUS_SERVICE, PUS_SUBSERVICE, None, b'', True), bytes.fromhex('1810c0500004210801bbc9')),
