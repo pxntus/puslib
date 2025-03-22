@@ -355,7 +355,7 @@ class PusTcPacket(CcsdsSpacePacket):
         packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
-        data_field_except_source_length = ((_COMMON_SEC_HDR_STRUCT.size + (2 if has_source_field else 0)) if secondary_header_flag else 0) + (2 if has_pec else 0)
+        data_field_except_source_length = ((_COMMON_SEC_HDR_STRUCT.size + (cls._SOURCE_FIELD_SIZE if has_source_field else 0)) if secondary_header_flag else 0) + (2 if has_pec else 0)
         if len(buffer) < cls._CCSDS_HDR_STRUCT.size + data_field_except_source_length:
             raise IncompletePacketException()
 
@@ -440,7 +440,7 @@ class PusTcPacket(CcsdsSpacePacket):
         source = kwargs.get('source', None)
 
         if kwargs.get('secondary_header_flag', True):
-            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if source is not None else 0)
+            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (cls._SOURCE_FIELD_SIZE if source is not None else 0)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TC
         kwargs['seq_count_or_name'] = kwargs.get('name', 0)
