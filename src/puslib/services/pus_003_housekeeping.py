@@ -58,7 +58,7 @@ class Housekeeping(PusService):
 
     @staticmethod
     def create_parameter_report(apid, seq_count, report, diagnostic=False):
-        app_data = report.to_bytes()
+        app_data = bytes(report)
         packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,

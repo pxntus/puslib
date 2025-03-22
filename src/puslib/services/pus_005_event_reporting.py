@@ -55,7 +55,7 @@ class EventReporting(PusService):
             return
 
         time = get_policy().CucTime()
-        payload = report.to_bytes()
+        payload = bytes(report)
         packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.seq_count(),

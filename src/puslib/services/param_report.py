@@ -38,6 +38,12 @@ class ParamReport:
         for param_id, param in self._params.items():
             yield param_id, param
 
+    def __bytes__(self):
+        args = [self._id]
+        if self._params:
+            args.extend([p.value for p in self._params.values()])
+        return self._cached_struct.pack(*args)
+
     @property
     def id(self) -> int:
         return self._id
@@ -60,12 +66,6 @@ class ParamReport:
             fmt += "".join([p.format for p in self._params.values()])
             fmt = '>' + fmt.replace('>', '')
         self._cached_struct = struct.Struct(fmt)
-
-    def to_bytes(self):
-        args = [self._id]
-        if self._params:
-            args.extend([p.value for p in self._params.values()])
-        return self._cached_struct.pack(*args)
 
     def enable(self):
         """Enable report.
