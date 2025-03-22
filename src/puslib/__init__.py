@@ -1,14 +1,9 @@
-import sys
 from functools import partial
 from dataclasses import dataclass
 
 from .packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: E402
 from .time import CucTime  # noqa: E402
 from .parameter import UInt8Parameter, UInt16Parameter  # noqa: E402
-
-_MIN_PYTHON = (3, 7)
-if sys.version_info < _MIN_PYTHON:
-    sys.exit(f"Python {_MIN_PYTHON[0]}.{_MIN_PYTHON[1]} or later is required.\n", 1)
 
 __version__ = "0.2.5"
 
@@ -21,25 +16,25 @@ class PusPolicy:
         self.event_reporting = self.EventReporting
         self.function_management = self.FunctionManagement
 
-    def CucTime(self, *args, **kwargs):
+    def CucTime(self, *args, **kwargs):  # pylint: disable=invalid-name
         func = partial(CucTime.create,
-            basic_unit_length=4,
-            frac_unit_length=2,
-            has_preamble=True)
+                       basic_unit_length=4,
+                       frac_unit_length=2,
+                       has_preamble=True)
         return func(*args, **kwargs)
 
-    def PusTcPacket(self, *args, **kwargs):
+    def PusTcPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
         func = partial(PusTcPacket.create,
-            pus_version=1,
-            ack_flags=AckFlag.ACCEPTANCE,
-            source=None)
+                       pus_version=1,
+                       ack_flags=AckFlag.ACCEPTANCE,
+                       source=None)
         return func(*args, **kwargs)
 
-    def PusTmPacket(self, *args, **kwargs):
+    def PusTmPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
         func = partial(PusTmPacket.create,
-            pus_version=1,
-            msg_type_counter=None,
-            destination=None)
+                       pus_version=1,
+                       msg_type_counter=None,
+                       destination=None)
         return func(*args, **kwargs)
 
     @dataclass
@@ -74,7 +69,7 @@ _pus_policy = PusPolicy()
 
 
 def set_policy(policy):
-    global _pus_policy
+    global _pus_policy  # pylint: disable=global-statement
     _pus_policy = policy
 
 
