@@ -1,9 +1,32 @@
 from functools import partial
 from dataclasses import dataclass
+from typing import Type
 
 from puslib.packet import PusTcPacket, PusTmPacket, AckFlag
 from puslib.time import CucTime
-from puslib.parameter import UInt8Parameter, UInt16Parameter
+from puslib.parameter import Parameter, UInt8Parameter, UInt16Parameter
+
+
+@dataclass(slots=True)
+class Time:
+    """Time related settings."""
+    has_preamble: bool = True
+    basic_unit_length: int = 4
+    frac_unit_length: int = 2
+
+
+@dataclass(slots=True)
+class Telecommanding:
+    """Telecommanding related settings."""
+    source_id_type: Type[Parameter] | None = None
+
+
+@dataclass(slots=True)
+class Telemetry:
+    """Telemetry related settings."""
+    destination_id_type: Type[Parameter] | None = None
+    msg_type_counter_type: Type[Parameter] | None = None
+    time = Time()
 
 
 class PusPolicy:
@@ -30,30 +53,35 @@ class PusPolicy:
         self.function_management = self.FunctionManagement
 
     def CucTime(self, *args, **kwargs):  # pylint: disable=invalid-name
-        func = partial(CucTime.create,
-                       basic_unit_length=4,
-                       frac_unit_length=2,
-                       has_preamble=True)
+        func = partial(
+            CucTime.create,
+            basic_unit_length=self.common.tm.time.basic_unit_length,
+            frac_unit_length=self.common.tm.time.frac_unit_length,
+            has_preamble=self.common.tm.time.has_preamble)
         return func(*args, **kwargs)
 
     def PusTcPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
-        func = partial(PusTcPacket.create,
-                       pus_version=1,
-                       ack_flags=AckFlag.ACCEPTANCE,
-                       source=None)
+        func = partial(
+            PusTcPacket.create,
+            pus_version=self.common.pus_version,
+            ack_flags=AckFlag.NONE,
+            source=self.common.tc.source_id_type)
         return func(*args, **kwargs)
 
     def PusTmPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
-        func = partial(PusTmPacket.create,
-                       pus_version=1,
-                       msg_type_counter=None,
-                       destination=None)
+        func = partial(
+            PusTmPacket.create,
+            pus_version=self.common.pus_version,
+            msg_type_counter=self.common.tm.msg_type_counter_type,
+            destination=self.common.tm.destination_id_type)
         return func(*args, **kwargs)
 
     @dataclass(slots=True)
     class Common:
-        """Policies common for all PUS services.
-        """
+        """Policies common for all PUS services."""
+        tc = Telecommanding()
+        tm = Telemetry()
+        pus_version = 1  # 1 - PUS rev A; 2 - PUS rev C
         param_id_type = UInt16Parameter
 
     @dataclass(slots=True)
