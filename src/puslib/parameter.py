@@ -46,6 +46,9 @@ class _Parameter:
     def __bytes__(self):
         return struct.pack(self.format, self.value)
 
+    def __len__(self):
+        return struct.calcsize(self.format)
+
     @property
     def value(self):
         return self._value
@@ -90,10 +93,6 @@ class _Parameter:
         """
         raise NotImplementedError
 
-    @property
-    def size(self):
-        return struct.calcsize(self.format)
-
     def subscribe(self, event_handler):
         """Subscribe to the parameter.
 
@@ -114,13 +113,12 @@ class BoolParameter(_Parameter):
     def __init__(self, init_value=False):
         super().__init__(format_code=8, init_value=init_value)
 
+    def __len__(self):
+        return 1
+
     @property
     def format(self):
         return self._fmt
-
-    @property
-    def size(self):
-        return 1
 
     def _validate(self, value):
         if not isinstance(value, bool):
@@ -159,11 +157,10 @@ class EnumParameter(_Parameter):
 
 
 class NumericParameter(_Parameter):
-    _value_size = None
+    _value_size = 0
     _fmt = None
 
-    @property
-    def size(self):
+    def __len__(self):
         return self._value_size
 
     @property
@@ -238,7 +235,7 @@ class _SignedIntegerParameter(_IntegerParameter):
     def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError("Integer expected")
-        if not (-2 ** (self.size * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
+        if not (-2 ** (len(self) * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
             raise ValueError
 
 
@@ -317,13 +314,12 @@ class OctetStringParameter(ArrayParameter):
     def __init__(self, init_value=None):
         super().__init__(format_code=0, init_value=init_value)
 
+    def __len__(self):
+        return len(self.value)
+
     @property
     def format(self, length_type):  # pylint: disable=arguments-differ
         return f"{length_type.format + len(self.value)}s"
-
-    @property
-    def size(self):
-        return len(self.value)
 
     def _validate(self, value):
         if not isinstance(value, (bytes, bytearray)):

@@ -121,17 +121,17 @@ class Housekeeping(PusService):
             else:
                 if sid.value in reports:
                     return CommonErrorCode.PUS3_SID_ALREADY_PRESENT
-            offset = sid.size
+            offset = len(sid)
 
             if not append:
                 collection_interval = get_policy().housekeeping.collection_interval_type()
                 collection_interval.value = collection_interval.from_bytes(app_data[offset:])
-                offset += collection_interval.size
+                offset += len(collection_interval)
 
             # parse number of parameters in the report definition
             n1 = get_policy().housekeeping.count_type()
             n1.value = n1.from_bytes(app_data[offset:])
-            offset += n1.size
+            offset += len(n1)
 
             # parse parameter IDs
             param_id_dummy = get_policy().common.param_id_type()
@@ -173,7 +173,7 @@ class Housekeeping(PusService):
             # parse number of parameters in the report definition
             num_reports = get_policy().housekeeping.count_type()
             num_reports.value = num_reports.from_bytes(app_data)
-            offset = num_reports.size
+            offset = len(num_reports)
 
             # parse report IDs
             report_id_dummy = get_policy().housekeeping.structure_id_type()
@@ -227,11 +227,11 @@ class Housekeeping(PusService):
         try:
             n = get_policy().housekeeping.count_type()
             n.value = n.from_bytes(app_data)
-            offset = n.size
+            offset = len(n)
             for _ in range(n.value):
                 sid = get_policy().housekeeping.structure_id_type()
                 sid.value = sid.from_bytes(app_data[offset:])
-                offset += sid.size
+                offset += len(sid)
                 collection_interval = get_policy().housekeeping.collection_interval_type()
                 collection_interval.value = collection_interval.from_bytes(app_data[offset:])
 
@@ -248,7 +248,7 @@ class Housekeeping(PusService):
             # parse number of parameters in the report definition
             num_reports = get_policy().housekeeping.count_type()
             num_reports.value = num_reports.from_bytes(app_data)
-            offset = num_reports.size
+            offset = len(num_reports)
 
             # parse report IDs
             report_id_dummy = get_policy().housekeeping.structure_id_type()

@@ -17,7 +17,7 @@ class ParameterManagement(PusService):
         try:
             num_ids.value = num_ids.from_bytes(app_data)
             fmt = ">" + f"{num_ids.value}{param_id_dummy.format}".replace('>', '')
-            ids = struct.unpack(fmt, app_data[num_ids.size:])
+            ids = struct.unpack(fmt, app_data[len(num_ids):])
         except struct.error:
             return False
         if not all(param_id in self._params for param_id in ids):
@@ -44,15 +44,15 @@ class ParameterManagement(PusService):
         try:
             num_values = get_policy().function_management.count_type().from_bytes(app_data)
             new_values = {}
-            offset = get_policy().function_management.count_type().size
+            offset = len(get_policy().function_management.count_type())
             for _ in range(num_values):
                 param_id = get_policy().common.param_id_type().from_bytes(app_data[offset:])
-                offset += get_policy().common.param_id_type().size
+                offset += len(get_policy().common.param_id_type())
                 if param_id not in self._params or param_id in new_values:
                     return False
                 param = self._params[param_id]
                 param_value = param.from_bytes(app_data[offset:])
-                offset += param.size
+                offset += len(param)
                 new_values[param_id] = param_value
         except struct.error:
             return False

@@ -84,7 +84,7 @@ class EventReporting(PusService):
                 get_policy().event_reporting.count_type.from_bytes(app_data)
             )
             fmt = '>' + f"{num_ids.value}{get_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
-            ids = struct.unpack(fmt, app_data[num_ids.size:])
+            ids = struct.unpack(fmt, app_data[len(num_ids):])
         except struct.error:
             return False
         if not all(eid in self._reports for eid in ids):

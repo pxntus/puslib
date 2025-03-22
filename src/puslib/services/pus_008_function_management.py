@@ -17,7 +17,7 @@ class FunctionManagement(PusService):
     def _perform(self, app_data):
         fid = get_policy().function_management.function_id_type()
         try:
-            fid.value = get_policy().function_management.function_id_type.from_bytes(app_data[:fid.size])
+            fid.value = get_policy().function_management.function_id_type.from_bytes(app_data[:len(fid)])
         except struct.error:
             return CommonErrorCode.INCOMPLETE
         if fid.value not in self._functions:
@@ -25,12 +25,12 @@ class FunctionManagement(PusService):
         func_def = self._functions[fid.value]
 
         args = []
-        offset = fid.size
+        offset = len(fid)
         if func_def.arg_types:
             try:
                 for arg in func_def.arg_types:
                     args.append(arg.from_bytes(app_data[offset:]))
-                    offset += arg().size
+                    offset += len(arg())
             except struct.error:
                 return CommonErrorCode.PUS8_INVALID_ARGS
 

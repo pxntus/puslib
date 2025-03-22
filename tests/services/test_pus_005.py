@@ -37,7 +37,7 @@ def test_manual_event(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == Severity.INFO
-    assert len(report.source_data) == get_policy().event_reporting.event_definition_id_type().size
+    assert len(report.source_data) == len(get_policy().event_reporting.event_definition_id_type())
     assert get_policy().event_reporting.event_definition_id_type.from_bytes(report.source_data) == 0
 
     pus_service_5.dispatch(ev)
@@ -70,7 +70,7 @@ def test_event_with_data(service_5_setup):
     assert tm_stream.size == 1
     report = tm_stream.get()
     id_param = get_policy().event_reporting.event_definition_id_type()
-    assert len(report.source_data) == (id_param.size + param1.size + param2.size + param3.size)
+    assert len(report.source_data) == (len(id_param) + len(param1) + len(param2) + len(param3))
     fmt = '>' + (id_param.format + param1.format + param2.format + param3.format).replace('>', '')
     id_param.value, param1.value, param2.value, param3.value = struct.unpack(fmt, report.source_data)
     assert id_param.value == 3
@@ -172,7 +172,7 @@ def test_disabled_event_report(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == 8
-    assert len(report.source_data) == get_policy().event_reporting.count_type().size
+    assert len(report.source_data) == len(get_policy().event_reporting.count_type())
     assert get_policy().event_reporting.count_type.from_bytes(report.source_data) == 0
 
     ev1 = pus_service_5.add(1, Severity.INFO)
@@ -186,7 +186,7 @@ def test_disabled_event_report(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == 8
-    assert len(report.source_data) == get_policy().event_reporting.count_type().size
+    assert len(report.source_data) == len(get_policy().event_reporting.count_type())
 
     ev2.disable()
     ev4.disable()
@@ -197,7 +197,7 @@ def test_disabled_event_report(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == 8
-    assert len(report.source_data) == get_policy().event_reporting.count_type().size + get_policy().event_reporting.event_definition_id_type().size * 2
+    assert len(report.source_data) == len(get_policy().event_reporting.count_type()) + len(get_policy().event_reporting.event_definition_id_type()) * 2
     fmt = '>' + f"{get_policy().event_reporting.count_type().format}2{get_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
     num_events, id1, id2 = struct.unpack(fmt, report.source_data)
     assert num_events == 2
@@ -213,7 +213,7 @@ def test_disabled_event_report(service_5_setup):
     report = tm_stream.get()
     assert report.service == 5
     assert report.subservice == 8
-    assert len(report.source_data) == get_policy().event_reporting.count_type().size + get_policy().event_reporting.event_definition_id_type().size * 4
+    assert len(report.source_data) == len(get_policy().event_reporting.count_type()) + len(get_policy().event_reporting.event_definition_id_type()) * 4
     fmt = '>' + f"{get_policy().event_reporting.count_type().format}4{get_policy().event_reporting.event_definition_id_type().format}".replace('>', '')
     num_events, id1, id2, id3, id4 = struct.unpack(fmt, report.source_data)
     assert num_events == 4
