@@ -23,7 +23,7 @@ class Report(ParamReport):
 
 
 class Housekeeping(PusService):
-    def __init__(self, ident, pus_service_1, tm_output_stream, params):
+    def __init__(self, ident, pus_service_1, tm_output_stream, params=None):
         super().__init__(PusServiceType.HOUSEKEEPING, ident, pus_service_1, tm_output_stream)
         self._params = params
         self._housekeeping_reports = {}
@@ -105,6 +105,9 @@ class Housekeeping(PusService):
         return packet
 
     def _create_or_append_report(self, app_data, append=False, diagnostic=False):
+        if not self._params:
+            return CommonErrorCode.PUS3_NO_PARAMS_AVAILABLE
+
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
 
         try:

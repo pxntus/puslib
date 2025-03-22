@@ -19,6 +19,7 @@ class CommonErrorCode(bytes, Enum):
     PUS3_SID_NOT_PRESENT = (31, "Structure ID does not exist")
     PUS3_CANNOT_MODIFY_ENABLED_REPORT = (32, "Report is enabled and cannot be modified")
     PUS3_PARAM_DUPLICATION = (33, "Same parameter is identified more than once in request")
+    PUS3_NO_PARAMS_AVAILABLE = (34, "No parameters avaialble in application process")
 
     PUS8_INVALID_FID = (80, "Invalid function ID")
     PUS8_FUNCTION_NOT_IMPLEMENTED = (81, "Function not implemented")
