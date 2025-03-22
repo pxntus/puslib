@@ -1,27 +1,13 @@
+# flake8: noqa
 
-class PusException(Exception):
-    pass
-
-
-class CrcException(PusException):
-    pass
+"""All exceptions used by puslib.
+"""
 
 
-class IncompletePacketException(PusException):
-    pass
-
-
-class InvalidPacketException(PusException):
-    pass
-
-
-class TooSmallBufferException(PusException):
-    pass
-
-
-class InvalidTimeFormat(PusException):
-    pass
-
-
-class TcPacketRoutingError(PusException):
-    pass
+class PusException(Exception): ...
+class CrcException(PusException): ...
+class IncompletePacketException(PusException): ...
+class InvalidPacketException(PusException): ...
+class TooSmallBufferException(PusException): ...
+class InvalidTimeFormat(PusException): ...
+class TcPacketRoutingError(PusException): ...
