@@ -27,7 +27,7 @@ def test_numeric_parameter(args):
     assert param.ptc == args.pus_param_type
     assert isinstance(param.value, args.python_type)
     assert param.size == args.value_size
-    param_bytes = param.to_bytes()
+    param_bytes = bytes(param)
     assert len(param_bytes) == args.value_size
     if param.ptc in (parameter.PacketFieldType.UINT, parameter.PacketFieldType.BOOLEAN):
         assert struct.pack(param.format, param.value) == args.init_value.to_bytes(args.value_size, byteorder='big')
@@ -70,7 +70,7 @@ def test_enumerate_parameter(args):
     assert param.ptc == parameter.PacketFieldType.ENUMERATED
     assert isinstance(param.value, int)
     assert param.size == args.value_size
-    param_bytes = param.to_bytes()
+    param_bytes = bytes(param)
     assert len(param_bytes) == args.value_size
     assert struct.pack(param.format, param.value) == args.init_value.to_bytes(args.value_size, byteorder='big')
     assert int.from_bytes(param_bytes, byteorder='big') == parameter.EnumParameter.from_bytes(param_bytes, param.size)

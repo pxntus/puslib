@@ -71,12 +71,12 @@ class Housekeeping(PusService):
 
     @staticmethod
     def create_structure_report(apid, seq_count, report, diagnostic=False):
-        app_data = get_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
-            get_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes() + \
-            get_policy().housekeeping.count_type(len(report)).to_bytes()
+        app_data = bytes(get_policy().housekeeping.structure_id_type(report.id)) + \
+            bytes(get_policy().housekeeping.collection_interval_type(report.collection_interval)) + \
+            bytes(get_policy().housekeeping.count_type(len(report)))
         for pid, _ in report:
-            app_data += get_policy().common.param_id_type(pid).to_bytes()
-        app_data += get_policy().housekeeping.count_type(0).to_bytes()
+            app_data += bytes(get_policy().common.param_id_type(pid))
+        app_data += bytes(get_policy().housekeeping.count_type(0))
         packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,
@@ -89,11 +89,11 @@ class Housekeeping(PusService):
 
     @staticmethod
     def create_periodic_generation_properties_report(apid, seq_count, reports_to_report, diagnostic=False):
-        app_data = get_policy().housekeeping.count_type(len(reports_to_report)).to_bytes()
+        app_data = bytes(get_policy().housekeeping.count_type(len(reports_to_report)))
         for report in reports_to_report:
-            app_data += get_policy().housekeeping.structure_id_type(report.id).to_bytes() + \
-                get_policy().housekeeping.periodic_generation_action_status_type(1 if report.enabled else 0).to_bytes() + \
-                get_policy().housekeeping.collection_interval_type(report.collection_interval).to_bytes()
+            app_data += bytes(get_policy().housekeeping.structure_id_type(report.id)) + \
+                bytes(get_policy().housekeeping.periodic_generation_action_status_type(1 if report.enabled else 0)) + \
+                bytes(get_policy().housekeeping.collection_interval_type(report.collection_interval))
         packet = get_policy().PusTmPacket(
             apid=apid,
             seq_count=seq_count,

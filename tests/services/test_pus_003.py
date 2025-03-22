@@ -32,12 +32,12 @@ def fixture_service_3_setup():
 def test_create_report(service_3_setup, is_diagnostic_report):
     pus_service_3, _, ident, params = service_3_setup
 
-    app_data = get_policy().housekeeping.structure_id_type(1).to_bytes() + \
-        get_policy().housekeeping.collection_interval_type(500).to_bytes() + \
-        get_policy().housekeeping.count_type(3).to_bytes()
+    app_data = bytes(get_policy().housekeeping.structure_id_type(1)) + \
+        bytes(get_policy().housekeeping.collection_interval_type(500)) + \
+        bytes(get_policy().housekeeping.count_type(3))
     for param_id, _ in params.items():
-        app_data += get_policy().common.param_id_type(param_id).to_bytes()
-    app_data += get_policy().housekeeping.count_type(0).to_bytes()
+        app_data += bytes(get_policy().common.param_id_type(param_id))
+    app_data += bytes(get_policy().housekeeping.count_type(0))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=2 if is_diagnostic_report else 1, data=app_data)
 
     pus_service_3.enqueue(packet)
@@ -67,16 +67,16 @@ def test_delete_report(service_3_setup, is_diagnostic_report):
     assert len(reports) == 1
 
     # Delete non-existant report with SID = 0
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(0).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(0))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=4 if is_diagnostic_report else 3, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()
     assert len(reports) == 1
 
     # Delete report with SID = 1
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(1).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=4 if is_diagnostic_report else 3, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()
@@ -101,8 +101,8 @@ def test_enable_report(service_3_setup, is_diagnostic_report):
     assert not report.enabled
 
     # Enable report with SID = 1
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(1).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=7 if is_diagnostic_report else 5, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()
@@ -127,8 +127,8 @@ def test_disable_report(service_3_setup, is_diagnostic_report):
     assert report.enabled
 
     # Disable report with SID = 1
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(1).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=8 if is_diagnostic_report else 6, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()
@@ -152,8 +152,8 @@ def test_structure_report(service_3_setup, is_diagnostic_report):
     pus_service_3.add(sid=1, collection_interval=1000, params_in_report=params, enabled=True, diagnostic=is_diagnostic_report)
 
     # Request structure report
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(1).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=11 if is_diagnostic_report else 9, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()
@@ -186,8 +186,8 @@ def test_parameter_report(service_3_setup, is_diagnostic_report):
     pus_service_3.add(sid=1, collection_interval=1000, params_in_report=params, enabled=True, diagnostic=is_diagnostic_report)
 
     # Request parameter report
-    app_data = get_policy().housekeeping.count_type(1).to_bytes() + \
-        get_policy().housekeeping.structure_id_type(1).to_bytes()
+    app_data = bytes(get_policy().housekeeping.count_type(1)) + \
+        bytes(get_policy().housekeeping.structure_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=3, service_subtype=28 if is_diagnostic_report else 27, data=app_data)
     pus_service_3.enqueue(packet)
     pus_service_3.process()

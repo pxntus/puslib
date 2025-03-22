@@ -43,6 +43,9 @@ class _Parameter:
         self._value = init_value
         self._events = []
 
+    def __bytes__(self):
+        return struct.pack(self.format, self.value)
+
     @property
     def value(self):
         return self._value
@@ -98,9 +101,6 @@ class _Parameter:
             event_handler -- event handler to receive updates
         """
         self._events.append(event_handler)
-
-    def to_bytes(self):
-        return struct.pack(self.format, self.value)
 
     def _validate(self, value):
         raise NotImplementedError
@@ -177,7 +177,7 @@ class NumericParameter(_Parameter):
 class _IntegerParameter(NumericParameter):
     _signed = None
 
-    def to_bytes(self):
+    def __bytes__(self):
         return self.value.to_bytes(self._value_size, byteorder='big', signed=self._signed)
 
     @classmethod

@@ -142,19 +142,19 @@ def test_toggle_event(service_5_setup):
     assert not ev3.enabled
     assert ev4.enabled
 
-    app_data = get_policy().event_reporting.count_type(1).to_bytes() + get_policy().event_reporting.event_definition_id_type(0).to_bytes()
+    app_data = bytes(get_policy().event_reporting.count_type(1)) + bytes(get_policy().event_reporting.event_definition_id_type(0))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=5, data=app_data)
     pus_service_5.enqueue(packet)
     pus_service_5.process()
     assert ev1.enabled
 
-    app_data = get_policy().event_reporting.count_type(1).to_bytes() + get_policy().event_reporting.event_definition_id_type(1).to_bytes()
+    app_data = bytes(get_policy().event_reporting.count_type(1)) + bytes(get_policy().event_reporting.event_definition_id_type(1))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=6, data=app_data)
     pus_service_5.enqueue(packet)
     pus_service_5.process()
     assert not ev2.enabled
 
-    app_data = get_policy().event_reporting.count_type(2).to_bytes() + get_policy().event_reporting.event_definition_id_type(2).to_bytes() + get_policy().event_reporting.event_definition_id_type(3).to_bytes()
+    app_data = bytes(get_policy().event_reporting.count_type(2)) + bytes(get_policy().event_reporting.event_definition_id_type(2)) + bytes(get_policy().event_reporting.event_definition_id_type(3))
     packet = PusTcPacket.create(apid=ident.apid, name=0, ack_flags=AckFlag.NONE, service_type=5, service_subtype=5, data=app_data)
     pus_service_5.enqueue(packet)
     pus_service_5.process()
