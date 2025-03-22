@@ -1,7 +1,4 @@
-import sys
 import argparse
-
-sys.path.append(r'../')
 
 from puslib.streams.file import FileInput  # noqa: E402
 

@@ -1,8 +1,5 @@
-import sys
 import sched
 from dataclasses import dataclass
-
-sys.path.append(r'../')
 
 from puslib import get_policy  # noqa: E402
 from puslib.parameter import UInt16Parameter, UInt32Parameter  # noqa: E402
@@ -19,7 +16,7 @@ class _ParamCollection:
 
 
 class MyAppProcess(Process):
-    def __init__(self, tm_output_stream, scheduler):
+    def __init__(self, tm_output_stream, scheduler):  # pylint: disable=redefined-outer-name
         super().__init__(10, tm_output_stream, scheduler,
                          housekeeping=False,
                          event_reporting=True,
@@ -79,7 +76,7 @@ def inject_tc2():
     my_process.forward(tc_packet)
 
 
-#scheduler.enter(2.5, 1, inject_tc)
-#scheduler.enter(4.5, 1, inject_tc2)
+# scheduler.enter(2.5, 1, inject_tc)
+# scheduler.enter(4.5, 1, inject_tc2)
 
 scheduler.run()
