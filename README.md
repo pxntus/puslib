@@ -17,7 +17,7 @@ This package is mainly intended for ground segment tools, e.g.:
 pip install puslib
 ```
 
-Python 3.7 or later is required.
+Python 3.10 or later is required.
 
 ## Basic Example
 
