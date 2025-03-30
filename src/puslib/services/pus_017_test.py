@@ -19,9 +19,9 @@ class Test(PusService):
             tm_output_stream -- output stream
         """
         super().__init__(PusServiceType.TEST, ident, pus_service_1, tm_output_stream)
-        super()._register_sub_service(1, self.connection_test)
+        super()._register_sub_service(1, self._connection_test)
 
-    def connection_test(self, app_data: SupportsBytes):  # pylint: disable=unused-argument
+    def _connection_test(self, app_data: SupportsBytes):  # pylint: disable=unused-argument
         """Response to a connection test request.
 
         Arguments:
