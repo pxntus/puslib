@@ -27,7 +27,7 @@ _PEC_FIELD_SIZE = 2
 
 
 def _validate_int_field(field_name: str, val: int, min_val: int, max_val: int):
-    if isinstance(val, int):
+    if isinstance(val, int) and not isinstance(val, bool):
         if not min_val <= val <= max_val:
             raise InvalidPacketException(f"{field_name} must be between {min_val} and {max_val}")
     else:
