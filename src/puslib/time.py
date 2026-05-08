@@ -1,7 +1,6 @@
 import math
 from enum import IntEnum
 from datetime import datetime
-from typing import SupportsBytes
 
 import bitstring
 
@@ -65,7 +64,7 @@ class _TimeFormat:
 class CucTime:
     """Represents a CCSDS unsegmented time code (CUC) according to CCSDS 301.0-B.
     """
-    def __init__(self, seconds: int = 0, fraction: int = 0, basic_unit_length: int = 4, frac_unit_length: int | None = 2, has_preamble: bool = True, epoch: datetime | None = None, preamble: SupportsBytes | None = None):
+    def __init__(self, seconds: int = 0, fraction: int = 0, basic_unit_length: int = 4, frac_unit_length: int | None = 2, has_preamble: bool = True, epoch: datetime | None = None, preamble: bytes | None = None):
         """Create a CUC time instance.
 
         Keyword Arguments:
@@ -158,7 +157,7 @@ class CucTime:
             self._seconds = round(seconds_since_epoch)
         return seconds_since_epoch
 
-    def from_bytes(self, buffer: SupportsBytes):
+    def from_bytes(self, buffer: bytes | bytearray):
         """Set CUC time from a byte array.
 
         Arguments:
@@ -176,7 +175,7 @@ class CucTime:
         self._fraction = int.from_bytes(buffer[fraction_offset:fraction_offset + self._format.frac_unit_length], byteorder='big')
 
     @classmethod
-    def deserialize(cls, buffer: SupportsBytes, has_preamble: bool = True, epoch: datetime | None = None, basic_unit_length: int | None = None, frac_unit_length: int | None = None) -> "CucTime":
+    def deserialize(cls, buffer: bytes | bytearray, has_preamble: bool = True, epoch: datetime | None = None, basic_unit_length: int | None = None, frac_unit_length: int | None = None) -> "CucTime":
         """Deserialize a binary coded CUC time to a CUC time object.
 
         Arguments:
