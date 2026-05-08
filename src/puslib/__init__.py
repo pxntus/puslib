@@ -14,8 +14,14 @@ def set_policy(policy):
     e.g., various field lengths. This is due to that many parts of the PUS standard
     are mission-specific.
 
-    The PUS policy is set on a global scope, thus, multiple simultaneous PUS policies
-    are not supported. Might need to be reviewed in the future.
+    The policy is stored as a module-level global and is not thread-safe. This is a
+    deliberate design choice: the library assumes a single-threaded execution model
+    where the policy is set once at startup and remains unchanged for the lifetime of
+    the application. Calling set_policy() from multiple threads, or changing the policy
+    while packets are being processed, results in undefined behavior.
+
+    If per-thread policies are ever required, replace this global with a
+    contextvars.ContextVar to give each thread or async task its own policy instance.
 
     Arguments:
         policy -- PUS policy
