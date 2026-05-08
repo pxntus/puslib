@@ -72,8 +72,11 @@ class PusService:
     def process(self):
         """Process queued PUS TC packets.
         """
-        while not self._incoming_tc_queue.empty():
-            tc_packet = self._incoming_tc_queue.get()
+        while True:
+            try:
+                tc_packet = self._incoming_tc_queue.get_nowait()
+            except queue.Empty:
+                break
             subservice_handler = self._subservices[tc_packet.subservice]
             ret = subservice_handler(app_data=tc_packet.app_data)
             if isinstance(ret, bool):
