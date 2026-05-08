@@ -147,7 +147,7 @@ class EnumParameter(Parameter):
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** self._format_code - 1):
-            raise ValueError
+            raise ValueError(f"Value must be between 0 and {2 ** self._format_code - 1}")
 
     @classmethod
     def from_bytes(cls, buffer, bitsize):
@@ -192,7 +192,7 @@ class _UnsignedIntegerParameter(_IntegerParameter):
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** (self._value_size * 8) - 1):
-            raise ValueError
+            raise ValueError(f"Value must be between 0 and {2 ** (self._value_size * 8) - 1}")
 
 
 class UInt8Parameter(_UnsignedIntegerParameter):
@@ -235,7 +235,7 @@ class _SignedIntegerParameter(_IntegerParameter):
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not (-2 ** (len(self) * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
-            raise ValueError
+            raise ValueError(f"Value must be between {-2 ** (self._value_size * 8 - 1)} and {2 ** (self._value_size * 8 - 1) - 1}")
 
 
 class Int8Parameter(_SignedIntegerParameter):
