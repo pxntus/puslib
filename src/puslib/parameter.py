@@ -38,7 +38,7 @@ class Parameter:
 
     def __init__(self, format_code: PacketFieldType, init_value=None):
         self._format_code = format_code
-        if init_value:
+        if init_value is not None:
             self._validate(init_value)
         self._value = init_value
         self._events = []
@@ -290,7 +290,7 @@ class Real32Parameter(_RealParameter):
     _fmt = '>f'
     _struct = struct.Struct(_fmt)
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value=0.0):
         super().__init__(format_code=1, init_value=init_value)
 
 
@@ -299,7 +299,7 @@ class Real64Parameter(_RealParameter):
     _fmt = '>d'
     _struct = struct.Struct(_fmt)
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value=0.0):
         super().__init__(format_code=2, init_value=init_value)
 
 
