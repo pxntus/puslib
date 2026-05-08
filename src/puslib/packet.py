@@ -10,7 +10,7 @@ Implementations of the following packet formats:
 import struct
 from enum import IntEnum, IntFlag
 from dataclasses import dataclass
-from typing import Optional, SupportsBytes
+from typing import Optional
 
 from puslib.exceptions import CrcException, IncompletePacketException, InvalidPacketException
 from puslib.time import CucTime
@@ -82,7 +82,7 @@ class CcsdsSpacePacket:
         """
         self.header: _PacketPrimaryHeader = _PacketPrimaryHeader()
         self.secondary_header = None
-        self.payload: SupportsBytes | None = None
+        self.payload: bytes | None = None
         self._has_pec = has_pec
 
     def __len__(self):
@@ -109,7 +109,7 @@ class CcsdsSpacePacket:
     def has_pec(self) -> bool:
         return self._has_pec
 
-    def serialize(self) -> SupportsBytes:
+    def serialize(self) -> bytes:
         """Serialize the packet to its binary format.
 
         Returns:
@@ -124,13 +124,13 @@ class CcsdsSpacePacket:
             packet_data_field = self.payload
         return ccsds_header + packet_data_field
 
-    def request_id(self) -> SupportsBytes:
+    def request_id(self) -> bytes:
         packet_id = self.header.packet_version_number << 13 | (1 if self.header.packet_type == PacketType.TC else 0) << 12 | (1 if self.header.secondary_header_flag else 0) << 11 | self.header.apid
         seq_ctrl = self.header.seq_flags << 14 | self.header.seq_count_or_name
         return struct.pack('>HH', packet_id, seq_ctrl)
 
     @classmethod
-    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True) -> "CcsdsSpacePacket":
+    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> "CcsdsSpacePacket":
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
@@ -304,7 +304,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return self.secondary_header.source
 
     @property
-    def app_data(self) -> SupportsBytes:
+    def app_data(self) -> bytes | None:
         return self.payload
 
     def serialize(self):
@@ -337,7 +337,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True, has_source_field: bool = True, validate_fields: bool = True):
+    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True, has_source_field: bool = True, validate_fields: bool = True):
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
@@ -541,7 +541,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return self.secondary_header.time
 
     @property
-    def source_data(self) -> SupportsBytes:
+    def source_data(self) -> bytes | None:
         return self.payload
 
     def serialize(self):
@@ -574,7 +574,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer: SupportsBytes, has_pec: bool = True, validate_pec: bool = True, cuc_time: CucTime | None = None, has_type_counter_field: bool = True, has_destination_field: bool = True, validate_fields: bool = True):
+    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True, cuc_time: CucTime | None = None, has_type_counter_field: bool = True, has_destination_field: bool = True, validate_fields: bool = True):
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
