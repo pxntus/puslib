@@ -6,14 +6,14 @@ This package is mainly intended for ground segment tools, e.g.:
 
 * data extraction and post-processing of telemetry.
 * simulators.
-* EGSE SW, and thus enabling the use of mission control systems for controling and monitoring of EGSE equipment.
+* EGSE SW, and thus enabling the use of mission control systems for controlling and monitoring of EGSE equipment.
 * enable Python based commanding for mission control systems and other PUS based systems.
 * mission-specific tools.
 * student projects.
 
 ## Install
 
-```Shell
+```shell
 pip install puslib
 ```
 
@@ -21,7 +21,7 @@ Python 3.10 or later is required.
 
 ## Basic Example
 
-```Python
+```python
 from datetime import datetime
 from functools import partial
 
