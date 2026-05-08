@@ -10,6 +10,6 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--validate-pec', action="store_true", help="Validate packet error control.")
     args = parser.parse_args()
 
-    file_input_stream = FileInput(args.input, args.offset, args.validate_pec)
+    file_input_stream = FileInput(args.input, other_headers_size=args.offset, validate_pec=args.validate_pec)
     for _, packet in file_input_stream:
         print(packet)
