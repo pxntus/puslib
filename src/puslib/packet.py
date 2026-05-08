@@ -356,7 +356,7 @@ class PusTcPacket(CcsdsSpacePacket):
         Returns:
             packet object
         """
-        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
+        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super().deserialize(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
         data_field_except_source_length = ((_COMMON_SEC_HDR_STRUCT.size + (cls._SOURCE_FIELD_SIZE if has_source_field else 0)) if secondary_header_flag else 0) + (2 if has_pec else 0)
@@ -448,7 +448,7 @@ class PusTcPacket(CcsdsSpacePacket):
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TC
         kwargs['seq_count_or_name'] = kwargs.get('name', 0)
-        packet = super(cls, cls).create(**kwargs)
+        packet = super().create(**kwargs)
 
         if packet.header.secondary_header_flag:
             pus_version = kwargs.get('pus_version', _TC_PACKET_PUS_VERSION_NUMBER)
@@ -595,7 +595,7 @@ class PusTmPacket(CcsdsSpacePacket):
         Returns:
             packet object
         """
-        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super(cls, cls).deserialize(buffer, has_pec, validate_pec)
+        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super().deserialize(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
         if secondary_header_flag:
@@ -717,7 +717,7 @@ class PusTmPacket(CcsdsSpacePacket):
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TM
         kwargs['seq_count_or_name'] = kwargs.get('seq_count', 0)
-        packet = super(cls, cls).create(**kwargs)
+        packet = super().create(**kwargs)
 
         if packet.header.secondary_header_flag:
             pus_version = kwargs.get('pus_version', _TM_PACKET_PUS_VERSION_NUMBER)
