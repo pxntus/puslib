@@ -1,7 +1,7 @@
 import struct
 from functools import partial
 from enum import IntEnum
-from typing import Type, SupportsBytes
+from typing import Type
 
 from puslib.ident import PusIdent
 from puslib.parameter import Parameter
@@ -57,10 +57,11 @@ class EventReporting(PusService):
         """
 
         super().__init__(PusServiceType.EVENT_REPORTING, ident, pus_service_1, tm_output_stream)
+        self._tm_output_stream: OutputStream
         self._register_sub_service(5, partial(self._toggle, enable=True))
         self._register_sub_service(6, partial(self._toggle, enable=False))
         self._register_sub_service(7, self._report_disabled_events)
-        self._reports = {}
+        self._reports: dict[int, Report] = {}
 
     def add(self, eid, severity=Severity.INFO, params_in_report=None, enabled=True, trig_param=None, to_value=None, from_value=None):
         """Add an event.
@@ -140,7 +141,7 @@ class EventReporting(PusService):
             if from_value == old_value and to_value == new_value:
                 self.dispatch(report)
 
-    def _toggle(self, app_data: SupportsBytes, enable: bool = True):
+    def _toggle(self, app_data: bytes | bytearray, enable: bool = True):
         try:
             num_ids = get_policy().event_reporting.count_type(
                 get_policy().event_reporting.count_type.from_bytes(app_data)
@@ -159,7 +160,7 @@ class EventReporting(PusService):
                     self._reports[eid].disable()
         return True
 
-    def _report_disabled_events(self, app_data: SupportsBytes):
+    def _report_disabled_events(self, app_data: bytes | bytearray):
         if len(app_data) != 0:
             return False
         time = get_policy().CucTime()

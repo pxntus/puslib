@@ -80,7 +80,7 @@ class CcsdsSpacePacket:
             has_pec -- true if a PEC field should be present (default: {True})
         """
         self.header: _PacketPrimaryHeader = _PacketPrimaryHeader()
-        self.secondary_header = None
+        self.secondary_header: _PacketSecondaryHeaderTc | _PacketSecondaryHeaderTm | None = None
         self.payload: bytes | None = None
         self._has_pec = has_pec
 
@@ -120,7 +120,7 @@ class CcsdsSpacePacket:
         if self.header.secondary_header_flag:
             packet_data_field = b''  # Leave it to subclasses to handle data field
         else:
-            packet_data_field = self.payload
+            packet_data_field = self.payload or b''
         return ccsds_header + packet_data_field
 
     def request_id(self) -> bytes:
@@ -215,7 +215,7 @@ class CcsdsSpacePacket:
         if isinstance(data, (bytearray, bytes, type(None))):
             if data is None:
                 data = bytes()
-            packet.payload = data
+            packet.payload = bytes(data)
         else:
             raise TypeError("Application data must be None, bytes or a bytearray")
 
@@ -263,7 +263,7 @@ class PusTcPacket(CcsdsSpacePacket):
 
     def __init__(self, has_pec: bool = True):
         super().__init__(has_pec)
-        self.secondary_header = _PacketSecondaryHeaderTc()
+        self.secondary_header: _PacketSecondaryHeaderTc = _PacketSecondaryHeaderTc()
 
     def __len__(self):
         size = super().__len__()
@@ -335,8 +335,7 @@ class PusTcPacket(CcsdsSpacePacket):
         packet_without_pec = ccsds_header + (ccsds_sec_header_static + ccsds_sec_header_source if self.header.secondary_header_flag else bytes()) + (self.payload or b'' if self.header.secondary_header_flag else bytes())
         if self.has_pec:
             mem_view = memoryview(packet_without_pec)
-            pec = crc_ccitt_calculate(mem_view)
-            pec = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+            pec = crc_ccitt_calculate(mem_view).to_bytes(_PEC_FIELD_SIZE, byteorder='big')
         else:
             pec = bytes()
 
@@ -415,7 +414,8 @@ class PusTcPacket(CcsdsSpacePacket):
             packet.header.data_length = data_length
             packet.payload = app_data
             packet.secondary_header.pus_version = pus_version
-            packet.secondary_header.ack_flags = ack_flags
+            if ack_flags is not None:
+                packet.secondary_header.ack_flags = ack_flags
             packet.secondary_header.service_type = service_type
             packet.secondary_header.service_subtype = service_subtype
             packet.secondary_header.source = source
@@ -499,7 +499,7 @@ class PusTmPacket(CcsdsSpacePacket):
 
     def __init__(self, has_pec: bool = True):
         super().__init__(has_pec)
-        self.secondary_header = _PacketSecondaryHeaderTm()
+        self.secondary_header: _PacketSecondaryHeaderTm = _PacketSecondaryHeaderTm()
 
     def __len__(self):
         size = super().__len__()
@@ -509,7 +509,7 @@ class PusTmPacket(CcsdsSpacePacket):
                 size += self._MSG_TYPE_COUNTER_FIELD_SIZE
             if self.secondary_header.destination is not None:
                 size += self._DESTINATION_FIELD_SIZE
-            size += len(self.secondary_header.time)
+            size += len(self.secondary_header.time) if self.secondary_header.time else 0
         return size
 
     def __str__(self):
@@ -543,7 +543,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return self.secondary_header.destination
 
     @property
-    def time(self) -> CucTime:
+    def time(self) -> CucTime | None:
         return self.secondary_header.time
 
     @property
@@ -569,11 +569,10 @@ class PusTmPacket(CcsdsSpacePacket):
             ccsds_sec_header_destination = bytes()
 
         # Packet error control
-        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_msg_type_counter + ccsds_sec_header_destination + bytes(self.secondary_header.time) + (self.payload or b'')
+        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_msg_type_counter + ccsds_sec_header_destination + (bytes(self.secondary_header.time) if self.secondary_header.time else b'') + (self.payload or b'')
         if self.has_pec:
             mem_view = memoryview(packet_without_pec)
-            pec = crc_ccitt_calculate(mem_view)
-            pec = pec.to_bytes(_PEC_FIELD_SIZE, byteorder='big')
+            pec = crc_ccitt_calculate(mem_view).to_bytes(_PEC_FIELD_SIZE, byteorder='big')
         else:
             pec = bytes()
 
@@ -715,7 +714,7 @@ class PusTmPacket(CcsdsSpacePacket):
         time = kwargs.get('time', None)
 
         if kwargs.get('secondary_header_flag', True):
-            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter is not None else 0) + (2 if destination is not None else 0) + len(time)
+            secondary_header_length = _COMMON_SEC_HDR_STRUCT.size + (2 if msg_type_counter is not None else 0) + (2 if destination is not None else 0) + (len(time) if time else 0)
             kwargs['secondary_header_length'] = secondary_header_length
         kwargs['packet_type'] = PacketType.TM
         kwargs['seq_count_or_name'] = kwargs.get('seq_count', 0)

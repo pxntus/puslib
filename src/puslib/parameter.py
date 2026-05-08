@@ -10,6 +10,7 @@ Relevant for the following PUS services:
 import math
 import struct
 from enum import IntEnum
+from typing import Any
 
 from puslib.time import CucTime
 from puslib.packet import PusTcPacket
@@ -35,14 +36,14 @@ class Parameter:
 
     Base class for concrete child classes.
     """
-    _type_code = None
+    _type_code: PacketFieldType
 
-    def __init__(self, format_code: PacketFieldType, init_value=None):
+    def __init__(self, format_code: int, init_value=None):
         self._format_code = format_code
         if init_value is not None:
             self._validate(init_value)
         self._value = init_value
-        self._events = []
+        self._events: list[Any] = []
 
     def __bytes__(self):
         return struct.pack(self.format, self.value)
@@ -66,7 +67,7 @@ class Parameter:
                 event(old_value=old_value, new_value=self._value)
 
     @property
-    def ptc(self) -> int:
+    def ptc(self) -> PacketFieldType:
         """Return the packet field type code of the parameter.
 
         Returns:
@@ -158,7 +159,7 @@ class EnumParameter(Parameter):
 
 class NumericParameter(Parameter):
     _value_size = 0
-    _fmt = None
+    _fmt: str
 
     def __len__(self):
         return self._value_size
@@ -172,7 +173,7 @@ class NumericParameter(Parameter):
 
 
 class _IntegerParameter(NumericParameter):
-    _signed = None
+    _signed: bool
 
     def __bytes__(self):
         return self.value.to_bytes(self._value_size, byteorder='big', signed=self._signed)
@@ -273,10 +274,9 @@ class Int64Parameter(_SignedIntegerParameter):
 
 class _RealParameter(NumericParameter):
     _type_code = PacketFieldType.REAL
-    _fmt = None
-    _struct = None
+    _struct: struct.Struct
 
-    @Parameter.value.setter
+    @Parameter.value.setter  # type: ignore[attr-defined]
     def value(self, new_value):
         if self._value is not None and math.isclose(self._value, new_value):
             return
@@ -328,7 +328,7 @@ class OctetStringParameter(ArrayParameter):
     def __len__(self):
         return len(self.value)
 
-    @property
+    @property  # type: ignore[misc]
     def format(self, length_type):  # pylint: disable=arguments-differ
         return f"{length_type.format + len(self.value)}s"
 

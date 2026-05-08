@@ -206,6 +206,8 @@ class CucTime:
         else:
             preamble = None
             preamble_size = 0
+        assert basic_unit_length is not None
+        assert frac_unit_length is not None
         if len(buffer) < preamble_size + basic_unit_length + frac_unit_length:
             raise ValueError("Buffer too small to contain CUC")
 

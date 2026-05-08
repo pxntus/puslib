@@ -1,5 +1,4 @@
 from enum import IntEnum
-from typing import SupportsBytes
 
 from puslib import get_policy
 from puslib.packet import AckFlag
@@ -32,6 +31,7 @@ class RequestVerification(PusService):
             tm_output_stream -- output stream
         """
         super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_output_stream=tm_output_stream)
+        self._tm_output_stream: OutputStream
 
     def enqueue(self, tc_packet):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
@@ -39,7 +39,7 @@ class RequestVerification(PusService):
     def process(self):
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
-    def accept(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+    def accept(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
         """Generate acceptance verification report.
 
         Arguments:
@@ -59,7 +59,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def start(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+    def start(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
         """Generate start of execution verification report.
 
         Arguments:
@@ -79,7 +79,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def progress(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+    def progress(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
         """Generate progress of execution verification report.
 
         Arguments:
@@ -99,7 +99,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def complete(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: SupportsBytes = None):
+    def complete(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
         """Generate completion of execution verification report.
 
         Arguments:
@@ -119,7 +119,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: SupportsBytes | None):
+    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: bytes | bytearray | None):
         payload = packet.request_id()
         if not success:
             if not failure_code:

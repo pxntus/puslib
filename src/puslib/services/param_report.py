@@ -1,6 +1,6 @@
 import struct
 from collections import OrderedDict
-from typing import Type
+from typing import Any, Type
 
 from puslib import get_policy
 from puslib.parameter import Parameter
@@ -28,9 +28,9 @@ class ParamReport:
             params_in_report -- parameters part of report (default: {None})
         """
         self._id = sid
-        self._params = OrderedDict()
+        self._params: OrderedDict[int, Any] = OrderedDict()
         self._enabled = enabled
-        self._cached_struct = None
+        self._cached_struct: struct.Struct | None = None
         self.append(params_in_report)
 
     def __len__(self):
@@ -41,6 +41,7 @@ class ParamReport:
             yield param_id, param
 
     def __bytes__(self):
+        assert self._cached_struct is not None
         args = [self._id]
         if self._params:
             args.extend([p.value for p in self._params.values()])
@@ -54,14 +55,14 @@ class ParamReport:
     def enabled(self) -> bool:
         return self._enabled
 
-    def append(self, params: dict[int, Type[Parameter]]):
+    def append(self, params: dict[int, Type[Parameter]] | None):
         """Append parameters to report.
 
         Arguments:
             params -- parameters to append to report
         """
         if params is not None:
-            self._params = {**self._params, **params}
+            self._params = OrderedDict({**self._params, **params})
 
         fmt = get_policy().common.param_id_type().format
         if len(self._params) > 0:

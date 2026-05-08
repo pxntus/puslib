@@ -3,6 +3,8 @@ from enum import Enum
 
 class CommonErrorCode(bytes, Enum):
     """Common error codes used as failure code in request verification (PUS service 1) fail reports"""
+    description: str  # mypy hint
+
     def __new__(cls, value, description):
         obj = bytes.__new__(cls, [value])
         obj._value_ = value

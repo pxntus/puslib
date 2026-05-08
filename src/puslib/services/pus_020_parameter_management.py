@@ -1,5 +1,5 @@
 import struct
-from typing import SupportsBytes, Type
+from typing import Type
 
 from puslib import get_policy
 from puslib.ident import PusIdent
@@ -12,7 +12,7 @@ from puslib.services.service import PusService, PusServiceType
 class ParameterManagement(PusService):
     """PUS service 20: Parameter management service."""
 
-    def __init__(self, ident: PusIdent, pus_service_1: RequestVerification, tm_output_stream: OutputStream, params: dict[int, Type[Parameter]]):
+    def __init__(self, ident: PusIdent, pus_service_1: RequestVerification, tm_output_stream: OutputStream, params: dict[int, Parameter]):
         """Create a PUS service instance.
 
         Arguments:
@@ -22,11 +22,12 @@ class ParameterManagement(PusService):
             params -- parameters to manage
         """
         super().__init__(PusServiceType.ONBOARD_PARAMETER_MANAGEMENT, ident, pus_service_1, tm_output_stream)
+        self._tm_output_stream: OutputStream
         super()._register_sub_service(1, self._report_parameter_values)
         super()._register_sub_service(3, self._set_parameter_values)
         self._params = params
 
-    def _report_parameter_values(self, app_data: SupportsBytes):
+    def _report_parameter_values(self, app_data: bytes | bytearray):
         """Handle report parameter values request.
 
         Arguments:
@@ -63,7 +64,7 @@ class ParameterManagement(PusService):
         self._tm_output_stream.write(packet)
         return True
 
-    def _set_parameter_values(self, app_data: SupportsBytes):
+    def _set_parameter_values(self, app_data: bytes | bytearray):
         """Handle set parameter values request.
 
         Arguments:
@@ -82,7 +83,7 @@ class ParameterManagement(PusService):
                 if param_id not in self._params or param_id in new_values:
                     return False
                 param = self._params[param_id]
-                param_value = param.from_bytes(app_data[offset:])
+                param_value = param.from_bytes(app_data[offset:])  # type: ignore[attr-defined]
                 offset += len(param)
                 new_values[param_id] = param_value
         except struct.error:

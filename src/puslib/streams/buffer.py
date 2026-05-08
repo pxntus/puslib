@@ -1,11 +1,12 @@
 from queue import SimpleQueue
+from typing import Any
 
 from puslib.streams.stream import OutputStream
 
 
 class QueuedOutput(OutputStream):
     def __init__(self):
-        self._queue = SimpleQueue()
+        self._queue: SimpleQueue[Any] = SimpleQueue()
 
     @property
     def size(self):

@@ -1,9 +1,9 @@
 import sched
 from enum import IntEnum
-from typing import Sequence, Callable
+from typing import Any, Sequence, Callable
 
 from puslib import services
-from puslib.services.service import PusServiceType
+from puslib.services.service import PusService, PusServiceType
 from puslib.ident import PusIdent
 from puslib.exceptions import TcPacketRoutingError
 from puslib.streams.stream import OutputStream
@@ -11,7 +11,7 @@ from puslib.parameter import Parameter
 from puslib.packet import PusTcPacket
 
 
-def periodic(scheduler: sched.scheduler, interval: int, priority: int, action, actionargs=()):
+def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action, actionargs=()):
     scheduler.enter(interval, priority, periodic, (scheduler, interval, priority, action, actionargs))
     action(*actionargs)
 
@@ -48,9 +48,9 @@ class Process:
         self._tm_output_stream = tm_output_stream
         self._scheduler = scheduler
 
-        self._params = {}
+        self._params: dict[int, Parameter] = {}
 
-        self._pus_services = {}
+        self._pus_services: dict[int, PusService] = {}
         self._pus_service_1 = services.RequestVerification(self._ident, tm_output_stream)
         self._pus_services[1] = self._pus_service_1
         if housekeeping:
@@ -69,7 +69,7 @@ class Process:
             self._pus_service_20 = services.ParameterManagement(self._ident, self._pus_service_1, tm_output_stream, self._params)
             self._pus_services[20] = self._pus_service_20
 
-        self._actions = {}
+        self._actions: dict[str, Callable[..., Any]] = {}
 
     @property
     def apid(self) -> int:
@@ -111,7 +111,7 @@ class Process:
             periodic(self._scheduler, interval, priority, func)
         return add_action
 
-    def function(self, fid: int, args: Sequence[Parameter]) -> Callable[...]:
+    def function(self, fid: int, args: Sequence[type[Parameter]]) -> Callable[..., Any]:
         """Add a function to the function management service.
 
         Arguments:

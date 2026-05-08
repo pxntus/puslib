@@ -1,5 +1,6 @@
 import queue
 from enum import Enum
+from typing import Any, Callable
 
 from puslib.ident import PusIdent
 from puslib.packet import PusTcPacket
@@ -7,6 +8,8 @@ from puslib.streams.stream import OutputStream
 
 
 class PusServiceType(bytes, Enum):
+    description: str  # mypy hint
+
     def __new__(cls, service_number, description):
         obj = bytes.__new__(cls, [service_number])
         obj._value_ = service_number
@@ -40,17 +43,17 @@ class PusServiceType(bytes, Enum):
 
 class PusService:
     """Base class for PUS services."""
-    def __init__(self, service_type: PusServiceType, ident: PusIdent | None = None, pus_service_1=None, tm_output_stream: OutputStream | None = None):
+    def __init__(self, service_type: PusServiceType, ident: PusIdent, pus_service_1=None, tm_output_stream: OutputStream | None = None):
         self._service_type = service_type
-        self._subservices = {}
+        self._subservices: dict[int, Callable[..., Any]] = {}
         self._ident = ident
-        self._incoming_tc_queue = queue.SimpleQueue()
+        self._incoming_tc_queue: queue.SimpleQueue[PusTcPacket] = queue.SimpleQueue()
         self._tm_output_stream = tm_output_stream
         self._pus_service_1 = pus_service_1
 
     @property
     def service(self) -> int:
-        return self._service_type.value
+        return int(self._service_type.value)
 
     @property
     def name(self) -> str:

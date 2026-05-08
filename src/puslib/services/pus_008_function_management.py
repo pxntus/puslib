@@ -1,6 +1,6 @@
 import struct
 from collections.abc import Callable
-from typing import SupportsBytes, Sequence, NamedTuple
+from typing import Sequence, NamedTuple, Type
 
 from puslib import get_policy
 from puslib.ident import PusIdent
@@ -12,7 +12,7 @@ from puslib.services.error_codes import CommonErrorCode
 
 class _FuncDef(NamedTuple):
     callback: Callable
-    arg_types: Sequence[Parameter]
+    arg_types: Sequence[Type[Parameter]]
 
 
 class FunctionManagement(PusService):
@@ -27,9 +27,9 @@ class FunctionManagement(PusService):
         """
         super().__init__(PusServiceType.FUNCTION_MANAGEMENT, ident, pus_service_1)
         super()._register_sub_service(1, self._perform)
-        self._functions = {}
+        self._functions: dict[int, _FuncDef] = {}
 
-    def _perform(self, app_data: SupportsBytes):
+    def _perform(self, app_data: bytes | bytearray):
         """Handle function request.
 
         Arguments:
@@ -52,8 +52,8 @@ class FunctionManagement(PusService):
         if func_def.arg_types:
             try:
                 for arg in func_def.arg_types:
-                    args.append(arg.from_bytes(app_data[offset:]))
-                    offset += len(arg())
+                    args.append(arg.from_bytes(app_data[offset:]))  # type: ignore[attr-defined]
+                    offset += len(arg())  # type: ignore[call-arg]
             except struct.error:
                 return CommonErrorCode.PUS8_INVALID_ARGS
 
@@ -62,7 +62,7 @@ class FunctionManagement(PusService):
 
         return func_def.callback(*args)
 
-    def add(self, func: Callable, fid: int, args: Sequence[Parameter]):
+    def add(self, func: Callable, fid: int, args: Sequence[Type[Parameter]]):
         """Add function handler.
 
         Arguments:

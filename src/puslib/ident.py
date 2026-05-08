@@ -1,4 +1,7 @@
-def _seq_count_generator():
+from typing import Iterator
+
+
+def _seq_count_generator() -> Iterator[int]:
     seq_count = -1
     max_count = 2 ** 14
     while True:
