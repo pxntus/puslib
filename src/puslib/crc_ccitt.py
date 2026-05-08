@@ -1,7 +1,6 @@
 """Handling for CRC-16-CCITT checksums.
 """
 
-from typing import SupportsBytes
 
 _POLYNOMIAL = 0x1021
 _PRESET = 0xffff
@@ -29,7 +28,7 @@ def _update_crc(crc, byte):
     return crc & 0xffff
 
 
-def calculate(buffer: SupportsBytes) -> int:
+def calculate(buffer: bytes | bytearray | memoryview) -> int:
     """Calculate the CRC-16-CCITT checksum on a buffer.
 
     Arguments:
