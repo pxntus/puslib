@@ -14,7 +14,7 @@ class PusIdent:
     - APID (Application ID)
     - packet sequence count
 
-    The sequence count is per APID and spans [0..32767].
+    The sequence count is per APID and spans [0..16383].
 
     The APID-sequence pair, thus, uniquely identifies a PUS packet for the foreseeable future.
     """
@@ -37,6 +37,6 @@ class PusIdent:
         """Returns next sequence count.
 
         Returns:
-            sequence count [0..32767]
+            sequence count [0..16383]
         """
         return next(self._seq_count_generator)
