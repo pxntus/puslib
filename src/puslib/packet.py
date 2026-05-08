@@ -142,7 +142,10 @@ class CcsdsSpacePacket:
         Returns:
             tuple of (packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length)
         """
-        packet_id, seq_ctrl, data_length = cls._CCSDS_HDR_STRUCT.unpack_from(buffer)
+        try:
+            packet_id, seq_ctrl, data_length = cls._CCSDS_HDR_STRUCT.unpack_from(buffer)
+        except struct.error:
+            raise IncompletePacketException()
 
         packet_size = cls._CCSDS_HDR_STRUCT.size + data_length + 1
         if packet_size > len(buffer):

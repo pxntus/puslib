@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import pytest
 
+from puslib.exceptions import CrcException, IncompletePacketException
 from puslib.packet import CcsdsSpacePacket
 from puslib.packet import PusTcPacket
 from puslib.packet import PusTmPacket
@@ -215,3 +216,66 @@ def test_tm_packet_deserialize(args, binary):
     buffer = packet.serialize()
     assert len(buffer) == len(binary)
     assert buffer == binary
+
+
+# Known-good binaries for error path tests
+_TC_VALID = bytes.fromhex('1810c0500004210801bbc9')
+_TC_VALID_NO_PEC = bytes.fromhex('1810c0500002210801')
+_TM_VALID = bytes.fromhex('0810c050001321820413142021') + bytes(TIME) + bytes.fromhex('deadbeef') + bytes.fromhex('0483')
+
+
+def test_tc_bad_crc_raises():
+    # Flip last byte of PEC to produce a bad checksum
+    corrupted = bytearray(_TC_VALID)
+    corrupted[-1] ^= 0xFF
+    with pytest.raises(CrcException):
+        PusTcPacket.deserialize(bytes(corrupted), has_source_field=False)
+
+
+def test_tm_bad_crc_raises():
+    corrupted = bytearray(_TM_VALID)
+    corrupted[-1] ^= 0xFF
+    with pytest.raises(CrcException):
+        PusTmPacket.deserialize(bytes(corrupted), cuc_time=TIME)
+
+
+def test_tc_bad_crc_skipped_when_validate_pec_false():
+    # validate_pec=False must suppress CRC check even for a corrupt packet
+    corrupted = bytearray(_TC_VALID)
+    corrupted[-1] ^= 0xFF
+    assert PusTcPacket.deserialize(bytes(corrupted), has_source_field=False, validate_pec=False) is not None
+
+
+def test_tm_bad_crc_skipped_when_validate_pec_false():
+    corrupted = bytearray(_TM_VALID)
+    corrupted[-1] ^= 0xFF
+    assert PusTmPacket.deserialize(bytes(corrupted), cuc_time=TIME, validate_pec=False) is not None
+
+
+@pytest.mark.parametrize("truncate_to", [0, 1, 3, 5])
+def test_tc_truncated_raises(truncate_to):
+    # Buffers shorter than the 6-byte primary header must raise, not leak struct.error
+    with pytest.raises(IncompletePacketException):
+        PusTcPacket.deserialize(_TC_VALID[:truncate_to], has_source_field=False)
+
+
+@pytest.mark.parametrize("truncate_to", [0, 1, 3, 5])
+def test_tm_truncated_raises(truncate_to):
+    with pytest.raises(IncompletePacketException):
+        PusTmPacket.deserialize(_TM_VALID[:truncate_to], cuc_time=TIME)
+
+
+def test_tc_truncated_mid_payload_raises():
+    # Buffer covers primary header but is cut short inside the secondary header
+    with pytest.raises(IncompletePacketException):
+        PusTcPacket.deserialize(_TC_VALID[:7], has_source_field=False)
+
+
+def test_tm_truncated_mid_payload_raises():
+    with pytest.raises(IncompletePacketException):
+        PusTmPacket.deserialize(_TM_VALID[:10], cuc_time=TIME)
+
+
+def test_tc_no_pec_not_crc_checked():
+    # has_pec=False must not attempt CRC validation on a packet without PEC
+    assert PusTcPacket.deserialize(_TC_VALID_NO_PEC, has_source_field=False, has_pec=False) is not None
