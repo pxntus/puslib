@@ -202,9 +202,10 @@ class CucTime:
             basic_unit_length = time_format.basic_unit_length
             frac_unit_length = time_format.frac_unit_length
             preamble = bytes(time_format)
+            preamble_size = len(time_format)
         else:
             preamble = None
-        preamble_size = len(time_format) if has_preamble else 0
+            preamble_size = 0
         if len(buffer) < preamble_size + basic_unit_length + frac_unit_length:
             raise ValueError("Buffer too small to contain CUC")
 
