@@ -112,7 +112,7 @@ class CucTime:
             raise ValueError(f"Seconds must be an integer between 0 and {max_val}")
 
     @property
-    def fraction(self) -> int:
+    def fraction(self) -> int | None:
         return self._fraction
 
     @fraction.setter
@@ -126,7 +126,7 @@ class CucTime:
             raise ValueError(f"Fraction must be an integer between 0 and {max_val}")
 
     @property
-    def time_field(self) -> tuple[int, int]:
+    def time_field(self) -> tuple[int, int | None]:
         """Return time as a pair of second and fraction.
 
         Returns:
