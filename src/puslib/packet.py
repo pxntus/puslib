@@ -11,10 +11,9 @@ import struct
 from enum import IntEnum, IntFlag
 from dataclasses import dataclass
 from typing import Optional
-
+from puslib.crc_ccitt import calculate as crc_ccitt_calculate
 from puslib.exceptions import CrcException, IncompletePacketException, InvalidPacketException
 from puslib.time import CucTime
-from puslib.crc_ccitt import calculate as crc_ccitt_calculate
 
 _CCSDS_PACKET_VERSION_NUMBER = 0
 _CCSDS_MAX_PACKET_SIZE = 65542
