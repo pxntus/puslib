@@ -129,8 +129,8 @@ class CcsdsSpacePacket:
         return struct.pack('>HH', packet_id, seq_ctrl)
 
     @classmethod
-    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> tuple[int, PacketType, bool, int, SequenceFlag, int, int]:
-        """Deserialize a packet from its binary format to a packet object.
+    def _parse_primary_header(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> tuple[int, PacketType, bool, int, SequenceFlag, int, int]:
+        """Parse and validate the CCSDS primary header from a buffer.
 
         Arguments:
             buffer -- packet in binary format
@@ -140,7 +140,7 @@ class CcsdsSpacePacket:
             validate_pec -- true if PEC field should be verified during operation (default: {True})
 
         Returns:
-            packet object
+            tuple of (packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length)
         """
         packet_id, seq_ctrl, data_length = cls._CCSDS_HDR_STRUCT.unpack_from(buffer)
 
@@ -355,7 +355,7 @@ class PusTcPacket(CcsdsSpacePacket):
         Returns:
             packet object
         """
-        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super().deserialize(buffer, has_pec, validate_pec)
+        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = cls._parse_primary_header(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
         data_field_except_source_length = ((_COMMON_SEC_HDR_STRUCT.size + (cls._SOURCE_FIELD_SIZE if has_source_field else 0)) if secondary_header_flag else 0) + (2 if has_pec else 0)
@@ -594,7 +594,7 @@ class PusTmPacket(CcsdsSpacePacket):
         Returns:
             packet object
         """
-        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = super().deserialize(buffer, has_pec, validate_pec)
+        packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length = cls._parse_primary_header(buffer, has_pec, validate_pec)
         offset = cls._CCSDS_HDR_STRUCT.size
 
         if secondary_header_flag:
