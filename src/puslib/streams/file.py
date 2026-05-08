@@ -28,5 +28,5 @@ class FileInput(InputStream):
         with open(self._input, 'rb') as f:
             content = f.read()
         data = memoryview(content)
-        _, packet = get_policy().PusTmPacket.deserialize(data[self._other_headers_size + offset:], validate_fields=False, validate_pec=False)
+        packet = get_policy().PusTmPacket().deserialize(data[self._other_headers_size + offset:], cuc_time=get_policy().CucTime(), has_type_counter_field=self._has_type_counter_field, has_destination_field=self._has_destination_field, validate_fields=False, validate_pec=self._validate_pec)
         return packet
