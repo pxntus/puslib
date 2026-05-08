@@ -199,6 +199,10 @@ class CcsdsSpacePacket:
         packet.header.apid = apid
 
         seq_flags = kwargs.get('seq_flags', SequenceFlag.UNSEGMENTED)
+        try:
+            seq_flags = SequenceFlag(seq_flags)
+        except ValueError:
+            raise ValueError(f"seq_flags must be a valid SequenceFlag value (0–3), got {seq_flags!r}")
         packet.header.seq_flags = seq_flags
 
         seq_count = kwargs.get('seq_count_or_name', 0)
