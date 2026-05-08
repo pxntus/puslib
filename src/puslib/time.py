@@ -222,12 +222,12 @@ class CucTime:
             preamble=preamble)
 
     @classmethod
-    def create(cls, seconds=0, fraction=0, basic_unit_length=4, frac_unit_length=2, has_preamble=True, epoch=None, preamble=None) -> "CucTime":
+    def create(cls, seconds=None, fraction=None, basic_unit_length=4, frac_unit_length=2, has_preamble=True, epoch=None, preamble=None) -> "CucTime":
         """A factory method to create a CUC time instance.
 
         Keyword Arguments:
-            seconds -- seconds since epoch (default: {0})
-            fraction -- fraction of second (default: {0})
+            seconds -- seconds since epoch (default: current UTC time)
+            fraction -- fraction of second (default: current UTC time)
             basic_unit_length -- number of bytes to represent seconds (default: {4})
             frac_unit_length -- number of bytes to represent fraction (default: {2})
             has_preamble -- set to True if the CUC time has a preamble (default: {True})
@@ -237,7 +237,7 @@ class CucTime:
         Returns:
             CUC time instance
         """
-        cuc_time = cls(seconds, fraction, basic_unit_length, frac_unit_length, has_preamble, epoch, preamble)
-        if seconds == 0 and fraction == 0:
+        cuc_time = cls(seconds or 0, fraction or 0, basic_unit_length, frac_unit_length, has_preamble, epoch, preamble)
+        if seconds is None and fraction is None:
             cuc_time.from_datetime(datetime.now(timezone.utc).replace(tzinfo=None))
         return cuc_time
