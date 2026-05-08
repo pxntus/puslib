@@ -130,7 +130,7 @@ class CcsdsSpacePacket:
         return struct.pack('>HH', packet_id, seq_ctrl)
 
     @classmethod
-    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> "CcsdsSpacePacket":
+    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> tuple[int, PacketType, bool, int, SequenceFlag, int, int]:
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
@@ -281,7 +281,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return pkt_info
 
     @property
-    def name(self) -> str:
+    def name(self) -> int:
         return self.header.seq_count_or_name
 
     def ack(self, ack_flag: AckFlag) -> bool:
