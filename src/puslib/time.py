@@ -87,7 +87,7 @@ class CucTime:
         return (len(self._format) if self._has_preamble else 0) + self._format.basic_unit_length + self._format.frac_unit_length
 
     def __float__(self):
-        return self._seconds + (self._fraction / (2 ** (self._format.frac_unit_length * 8)))
+        return self._seconds + (self._fraction / (2 ** (self._format.frac_unit_length * 8)) if self._format.frac_unit_length else 0.0)
 
     def __str__(self):
         return f"{float(self):.3f} seconds since epoch ({self._epoch})"
