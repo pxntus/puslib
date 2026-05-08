@@ -156,10 +156,10 @@ class CcsdsSpacePacket:
                 raise CrcException
 
         packet_version_number = (packet_id >> 13) & 0b111
-        packet_type = PacketType.TC if (packet_id >> 12) & 0b1 == 1 else PacketType.TM
+        packet_type = PacketType((packet_id >> 12) & 0b1)
         secondary_header_flag = True if (packet_id >> 11) & 0b1 == 1 else False
         apid = packet_id & 0x7ff
-        seq_flags = (seq_ctrl >> 14) & 0b11
+        seq_flags = SequenceFlag((seq_ctrl >> 14) & 0b11)
         seq_count_or_name = seq_ctrl & 0x3fff  # count or name
         return packet_version_number, packet_type, secondary_header_flag, apid, seq_flags, seq_count_or_name, data_length
 
