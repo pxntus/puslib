@@ -133,12 +133,11 @@ class EnumParameter(Parameter):
     _type_code = PacketFieldType.ENUMERATED
 
     def __init__(self, init_value=0, bitsize=8):
-        super().__init__(format_code=bitsize, init_value=init_value)
         if not 1 <= bitsize <= 64:
-            raise ValueError()
-        self._format_code = bitsize
+            raise ValueError(f"bitsize must be between 1 and 64, got {bitsize}")
         value_size = bitsize // 8 + (1 if bitsize % 8 != 0 else 0)
         self._fmt = {1: '>B', 2: '>H', 3: '>I', 4: '>I'}.get(value_size, '>Q')
+        super().__init__(format_code=bitsize, init_value=init_value)
 
     @property
     def format(self):
