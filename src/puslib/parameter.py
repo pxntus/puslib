@@ -144,7 +144,7 @@ class EnumParameter(Parameter):
         return self._fmt
 
     def _validate(self, value):
-        if not isinstance(value, int):
+        if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** self._format_code - 1):
             raise ValueError
@@ -189,7 +189,7 @@ class _UnsignedIntegerParameter(_IntegerParameter):
     _signed = False
 
     def _validate(self, value):
-        if not isinstance(value, int):
+        if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** (self._value_size * 8) - 1):
             raise ValueError
@@ -232,7 +232,7 @@ class _SignedIntegerParameter(_IntegerParameter):
     _signed = True
 
     def _validate(self, value):
-        if not isinstance(value, int):
+        if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not (-2 ** (len(self) * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
             raise ValueError
