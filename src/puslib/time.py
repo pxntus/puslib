@@ -1,6 +1,6 @@
 import math
 from enum import IntEnum
-from datetime import datetime
+from datetime import datetime, timezone
 
 import bitstring
 
@@ -239,7 +239,5 @@ class CucTime:
         """
         cuc_time = cls(seconds, fraction, basic_unit_length, frac_unit_length, has_preamble, epoch, preamble)
         if seconds == 0 and fraction == 0:
-            # dt_now = datetime.now(timezone.utc)
-            dt_now = datetime.now()
-            cuc_time.from_datetime(dt_now)
+            cuc_time.from_datetime(datetime.now(timezone.utc).replace(tzinfo=None))
         return cuc_time
