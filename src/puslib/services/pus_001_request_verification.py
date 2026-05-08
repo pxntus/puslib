@@ -128,7 +128,7 @@ class RequestVerification(PusService):
         time = get_policy().CucTime()
         report = get_policy().PusTmPacket(
             apid=self._ident.apid,
-            seq_count=self._ident.seq_count(),
+            seq_count=self._ident.next_seq_count(),
             service_type=self._service_type.value,
             service_subtype=subservice,
             time=time,

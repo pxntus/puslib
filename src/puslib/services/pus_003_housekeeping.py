@@ -255,7 +255,7 @@ class Housekeeping(PusService):
     def _request_report_structures(self, app_data: SupportsBytes, diagnostic: bool = False):
         def operation(report_id, reports):
             report = reports[report_id]
-            packet = Housekeeping.create_structure_report(self._ident.apid, self._ident.seq_count(), report, diagnostic)
+            packet = Housekeeping.create_structure_report(self._ident.apid, self._ident.next_seq_count(), report, diagnostic)
             self._tm_output_stream.write(packet)
 
         return self._for_each_report_id(app_data, diagnostic, operation)
@@ -263,7 +263,7 @@ class Housekeeping(PusService):
     def _request_reports(self, app_data: SupportsBytes, diagnostic: bool = False):
         def operation(report_id, reports):
             report = reports[report_id]
-            packet = Housekeeping.create_parameter_report(self._ident.apid, self._ident.seq_count(), report, diagnostic)
+            packet = Housekeeping.create_parameter_report(self._ident.apid, self._ident.next_seq_count(), report, diagnostic)
             self._tm_output_stream.write(packet)
 
         return self._for_each_report_id(app_data, diagnostic, operation)
@@ -303,7 +303,7 @@ class Housekeeping(PusService):
 
             reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
             reports_to_report = [reports[sid] for sid in report_ids if sid in reports]
-            packet = Housekeeping.create_periodic_generation_properties_report(self._ident.apid, self._ident.seq_count(), reports_to_report, diagnostic)
+            packet = Housekeeping.create_periodic_generation_properties_report(self._ident.apid, self._ident.next_seq_count(), reports_to_report, diagnostic)
             self._tm_output_stream.write(packet)
             return True
 

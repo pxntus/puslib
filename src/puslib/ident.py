@@ -33,7 +33,7 @@ class PusIdent:
     def apid(self) -> int:
         return self._apid
 
-    def seq_count(self) -> int:
+    def next_seq_count(self) -> int:
         """Returns next sequence count.
 
         Returns:

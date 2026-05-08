@@ -120,7 +120,7 @@ class EventReporting(PusService):
         payload = bytes(report)
         packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
-            seq_count=self._ident.seq_count(),
+            seq_count=self._ident.next_seq_count(),
             service_type=self._service_type.value,
             service_subtype=report.severity,
             time=time,
@@ -169,7 +169,7 @@ class EventReporting(PusService):
         payload = struct.pack(fmt, num_ids.value, *disabled_ids)
         packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
-            seq_count=self._ident.seq_count(),
+            seq_count=self._ident.next_seq_count(),
             service_type=self._service_type.value,
             service_subtype=8,
             time=time,
