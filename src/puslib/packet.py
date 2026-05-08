@@ -330,7 +330,7 @@ class PusTcPacket(CcsdsSpacePacket):
             ccsds_sec_header_static = bytes()
 
         # Packet error control
-        packet_without_pec = ccsds_header + (ccsds_sec_header_static + ccsds_sec_header_source if self.header.secondary_header_flag else bytes()) + (self.payload if self.header.secondary_header_flag else bytes())
+        packet_without_pec = ccsds_header + (ccsds_sec_header_static + ccsds_sec_header_source if self.header.secondary_header_flag else bytes()) + (self.payload or b'' if self.header.secondary_header_flag else bytes())
         if self.has_pec:
             mem_view = memoryview(packet_without_pec)
             pec = crc_ccitt_calculate(mem_view)
@@ -567,7 +567,7 @@ class PusTmPacket(CcsdsSpacePacket):
             ccsds_sec_header_destination = bytes()
 
         # Packet error control
-        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_msg_type_counter + ccsds_sec_header_destination + bytes(self.secondary_header.time) + self.payload
+        packet_without_pec = ccsds_header + ccsds_sec_header_static + ccsds_sec_header_msg_type_counter + ccsds_sec_header_destination + bytes(self.secondary_header.time) + (self.payload or b'')
         if self.has_pec:
             mem_view = memoryview(packet_without_pec)
             pec = crc_ccitt_calculate(mem_view)
