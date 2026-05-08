@@ -7,6 +7,7 @@ Relevant for the following PUS services:
 - parameter management service
 """
 
+import math
 import struct
 from enum import IntEnum
 
@@ -274,6 +275,17 @@ class _RealParameter(NumericParameter):
     _type_code = PacketFieldType.REAL
     _fmt = None
     _struct = None
+
+    @Parameter.value.setter
+    def value(self, new_value):
+        if self._value is not None and math.isclose(self._value, new_value):
+            return
+        self._validate(new_value)
+        old_value = self._value
+        self._value = new_value
+        if self._events:
+            for event in self._events:
+                event(old_value=old_value, new_value=self._value)
 
     def _validate(self, value):
         if not isinstance(value, float):
