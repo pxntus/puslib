@@ -16,15 +16,14 @@ class TimeCodeIdentification(IntEnum):
 
 
 class _TimeFormat:
-    def __init__(self, basic_unit_length, frac_unit_length, epoch=None, preamble=None):
+    def __init__(self, basic_unit_length, frac_unit_length, time_code_id=TimeCodeIdentification.TAI, preamble=None):
         if not 1 <= basic_unit_length <= 7:
             raise InvalidTimeFormat("Basic time unit must be 1 to 7 octets")
         self.basic_unit_length = basic_unit_length
         if not 0 <= frac_unit_length <= 10:
             raise InvalidTimeFormat("Fractional time unit must be 0 to 10 octets")
         self.frac_unit_length = frac_unit_length
-        self.epoch = epoch if epoch else TAI_EPOCH
-        self.time_code_id = TimeCodeIdentification.AGENCY_DEFINED if epoch else TimeCodeIdentification.TAI
+        self.time_code_id = TimeCodeIdentification(time_code_id)
         self.preamble = preamble if preamble else self._pack_preamble()
 
     def __bytes__(self):
@@ -58,9 +57,9 @@ class _TimeFormat:
             octet2 = buffer[1]
             basic_unit_length += (octet2 >> 5) & 0b11
         frac_unit_length = (octet1 & 0b11) + (((octet2 >> 2) & 0b111) if p_field_extension else 0)
-        epoch = (octet1 >> 4) & 0b111
+        time_code_id = TimeCodeIdentification((octet1 >> 4) & 0b111)
         preamble = bytes([buffer[0]]) + (bytes([buffer[1]]) if p_field_extension else b'')
-        return cls(basic_unit_length, frac_unit_length, epoch, preamble)
+        return cls(basic_unit_length, frac_unit_length, time_code_id, preamble)
 
 
 class CucTime:
@@ -78,7 +77,9 @@ class CucTime:
             epoch -- epoch of time (default: {None})
             preamble -- ready-made preamble to use for this CUC time (default: {None})
         """
-        self._format = _TimeFormat(basic_unit_length, frac_unit_length, epoch, preamble)
+        self._epoch = epoch if epoch else TAI_EPOCH
+        time_code_id = TimeCodeIdentification.AGENCY_DEFINED if epoch else TimeCodeIdentification.TAI
+        self._format = _TimeFormat(basic_unit_length, frac_unit_length, time_code_id, preamble)
         self._has_preamble = has_preamble
         self._seconds = seconds
         self._fraction = fraction if self._format.frac_unit_length else None
@@ -90,14 +91,14 @@ class CucTime:
         return self._seconds + (self._fraction / (2 ** (self._format.frac_unit_length * 8)))
 
     def __str__(self):
-        return f"{float(self):.3f} seconds since epoch ({self._format.epoch})"
+        return f"{float(self):.3f} seconds since epoch ({self._epoch})"
 
     def __bytes__(self):
         return (bytes(self._format) if self._has_preamble else b'') + (bitstring.pack(f'uintbe:{self._format.basic_unit_length * 8}', self._seconds).bytes) + (bitstring.pack(f'uintbe:{self._format.frac_unit_length * 8}', self._fraction).bytes if self._format.frac_unit_length else b'')
 
     @property
     def epoch(self) -> datetime:
-        return self._format.epoch
+        return self._epoch
 
     @property
     def seconds(self) -> int:
