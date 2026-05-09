@@ -31,7 +31,7 @@ class Process:
     the space system that can host one or more subservice entities".
     """
     def __init__(self, apid: int, tm_output_stream: OutputStream, scheduler: sched.scheduler,
-                 housekeeping: bool = False, event_reporting: bool = False, function_management: bool = False, test: bool = False, parameter_management: bool = False):
+                 housekeeping: bool = False, event_reporting: bool = False, function_management: bool = False, test: bool = False, parameter_management: bool = False, hk_tick: float = 1.0):
         """Create an application process.
 
         Arguments:
@@ -58,6 +58,7 @@ class Process:
         if housekeeping:
             self._pus_service_3 = services.Housekeeping(self._ident, self._pus_service_1, tm_output_stream)
             self._pus_services[3] = self._pus_service_3
+            periodic(self._scheduler, hk_tick, Priority.NORMAL, self._pus_service_3.update)
         if event_reporting:
             self._pus_service_5 = services.EventReporting(self._ident, self._pus_service_1, tm_output_stream)
             self._pus_services[5] = self._pus_service_5
