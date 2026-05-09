@@ -113,11 +113,11 @@ class Housekeeping(PusService):
 
     def update(self):
         now = time.monotonic()
-        for diagnostic, reports in ((False, self._housekeeping_reports), (True, self._diagnostic_reports)):
+        for is_diagnostic, reports in ((False, self._housekeeping_reports), (True, self._diagnostic_reports)):
             for report in reports.values():
                 if report.enabled and report.is_due(now):
                     packet = Housekeeping.create_parameter_report(
-                        self._ident.apid, self._ident.next_seq_count(), report, diagnostic
+                        self._ident.apid, self._ident.next_seq_count(), report, is_diagnostic
                     )
                     self._tm_output_stream.write(packet)
                     report.mark_sent(now)
