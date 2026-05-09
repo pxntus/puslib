@@ -126,3 +126,36 @@ class Process:
                 raise RuntimeError("Process has no function management service")
             self._pus_service_8.add(func, fid, args)
         return add_function
+
+
+class Router:
+    """Routes incoming TC packets to the correct application process by APID."""
+
+    def __init__(self):
+        self._processes: dict[int, Process] = {}
+
+    def register(self, process: Process):
+        """Register an application process with the router.
+
+        Arguments:
+            process -- application process to register
+
+        Raises:
+            ValueError: if a process with the same APID is already registered
+        """
+        if process.apid in self._processes:
+            raise ValueError(f"Process with APID {process.apid} is already registered")
+        self._processes[process.apid] = process
+
+    def forward(self, tc_packet: PusTcPacket):
+        """Forward a TC packet to the process matching its APID.
+
+        Arguments:
+            tc_packet -- PUS TC packet
+
+        Raises:
+            TcPacketRoutingError: if no process is registered for the packet's APID
+        """
+        if tc_packet.apid not in self._processes:
+            raise TcPacketRoutingError(f"No process registered for APID {tc_packet.apid}")
+        self._processes[tc_packet.apid].forward(tc_packet)
