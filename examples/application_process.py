@@ -18,13 +18,18 @@ class _ParamCollection:
 class MyAppProcess(Process):
     def __init__(self, tm_output_stream, scheduler):  # pylint: disable=redefined-outer-name
         super().__init__(10, tm_output_stream, scheduler,
-                         housekeeping=False,
+                         housekeeping=True,
                          event_reporting=True,
                          function_management=True,
                          test=True)
 
         self.parameters = _ParamCollection()
 
+        self._pus_service_3.add(sid=1, collection_interval=2,
+                                params_in_report={0: self.parameters.param1,
+                                                  1: self.parameters.param2})
+        self._pus_service_3.add(sid=2, collection_interval=5,
+                                params_in_report={0: self.parameters.param3})
         self._report = {0: self.parameters.param1, 1: self.parameters.param2}
         self.event1 = self._pus_service_5.add(eid=0,
                                               severity=Severity.INFO,

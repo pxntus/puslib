@@ -1,4 +1,5 @@
 import struct
+import time
 from functools import partial
 from collections import OrderedDict
 from typing import Type, Sequence, Callable
@@ -31,6 +32,7 @@ class Report(ParamReport):
         """
         super().__init__(sid, enabled, params_in_report)
         self._collection_interval = collection_interval
+        self._last_sent: float = float('-inf')
 
     @property
     def collection_interval(self):
@@ -39,6 +41,12 @@ class Report(ParamReport):
     @collection_interval.setter
     def collection_interval(self, new_value):
         self._collection_interval = new_value
+
+    def is_due(self, now: float) -> bool:
+        return (now - self._last_sent) >= self._collection_interval
+
+    def mark_sent(self, now: float) -> None:
+        self._last_sent = now
 
 
 class Housekeeping(PusService):
@@ -102,6 +110,17 @@ class Housekeeping(PusService):
         report = Report(sid, collection_interval, enabled, params_in_report)
         reports[sid] = report
         return report
+
+    def update(self):
+        now = time.monotonic()
+        for diagnostic, reports in ((False, self._housekeeping_reports), (True, self._diagnostic_reports)):
+            for report in reports.values():
+                if report.enabled and report.is_due(now):
+                    packet = Housekeeping.create_parameter_report(
+                        self._ident.apid, self._ident.next_seq_count(), report, diagnostic
+                    )
+                    self._tm_output_stream.write(packet)
+                    report.mark_sent(now)
 
     @staticmethod
     def create_parameter_report(apid: int, seq_count: int, report: Report, diagnostic: bool = False):
