@@ -11,8 +11,10 @@ from puslib.parameter import Parameter
 from puslib.packet import PusTcPacket
 
 
-def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action, actionargs=()):
-    scheduler.enter(interval, priority, periodic, (scheduler, interval, priority, action, actionargs))
+def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action, actionargs=(), _next: float | None = None):
+    now = scheduler.timefunc()
+    next_time = (now + interval) if _next is None else (_next + interval)
+    scheduler.enterabs(next_time, priority, periodic, (scheduler, interval, priority, action, actionargs, next_time))
     action(*actionargs)
 
 
