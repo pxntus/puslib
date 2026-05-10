@@ -45,6 +45,7 @@ class Process:
             function_management -- enable function management service (default: {False})
             test -- enable test service (default: {False})
             parameter_management -- enable parameter management service (default: {False})
+            hk_tick -- base tick interval in seconds for the housekeeping scheduler; all report collection intervals must be a multiple of this value (default: {1.0})
         """
         self._ident = PusIdent(apid)
         self._tm_output_stream = tm_output_stream
@@ -76,6 +77,7 @@ class Process:
 
     @property
     def apid(self) -> int:
+        """Application process identifier (APID)."""
         return self._ident.apid
 
     def addparam(self, param_id: int, param: Parameter):
@@ -119,7 +121,7 @@ class Process:
 
         Arguments:
             fid -- function ID
-            args -- arguments to the functions
+            args -- sequence of parameter types defining the function's argument list
         """
         def add_function(func):
             if PusServiceType.FUNCTION_MANAGEMENT.value not in self._pus_services:

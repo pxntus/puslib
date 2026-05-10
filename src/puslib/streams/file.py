@@ -5,7 +5,20 @@ from puslib.streams.stream import InputStream
 
 
 class FileInput(InputStream):
+    """Input stream that reads TM packets from a binary archive file."""
+
     def __init__(self, archive_file, has_type_counter_field=True, has_destination_field=True, other_headers_size=0, validate_pec=True):
+        """Create a file input stream.
+
+        Arguments:
+            archive_file -- path to the binary telemetry archive
+
+        Keyword Arguments:
+            has_type_counter_field -- whether packets include a message type counter field (default: {True})
+            has_destination_field -- whether packets include a destination ID field (default: {True})
+            other_headers_size -- number of bytes of non-PUS header preceding each packet (default: {0})
+            validate_pec -- whether to validate the packet error control (CRC) field (default: {True})
+        """
         self._input = Path(archive_file)
         self._has_type_counter_field = has_type_counter_field
         self._has_destination_field = has_destination_field
@@ -13,6 +26,7 @@ class FileInput(InputStream):
         self._validate_pec = validate_pec
 
     def __iter__(self):
+        """Iterate over all packets in the archive, yielding (other_headers, packet) tuples."""
         with open(self._input, 'rb') as f:
             content = f.read()
         data = memoryview(content)
@@ -25,6 +39,14 @@ class FileInput(InputStream):
             yield other_headers, packet
 
     def read(self, offset=0):
+        """Read a single packet at a given byte offset within the archive.
+
+        Keyword Arguments:
+            offset -- byte offset from the start of the data region (after other_headers_size) (default: {0})
+
+        Returns:
+            deserialized TM packet
+        """
         with open(self._input, 'rb') as f:
             content = f.read()
         data = memoryview(content)

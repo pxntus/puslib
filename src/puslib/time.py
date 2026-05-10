@@ -97,10 +97,12 @@ class CucTime:
 
     @property
     def epoch(self) -> datetime:
+        """Epoch used as the time reference."""
         return self._epoch
 
     @property
     def seconds(self) -> int:
+        """Integer seconds since epoch."""
         return self._seconds
 
     @seconds.setter
@@ -113,6 +115,7 @@ class CucTime:
 
     @property
     def fraction(self) -> int | None:
+        """Sub-second fraction, or None if the CUC time has no fractional part."""
         return self._fraction
 
     @fraction.setter
