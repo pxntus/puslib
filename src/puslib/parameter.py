@@ -10,7 +10,7 @@ Relevant for the following PUS services:
 import math
 import struct
 from enum import IntEnum
-from typing import Any
+from typing import Any, Callable, NoReturn
 
 from puslib.time import CucTime
 from puslib.packet import PusTcPacket
@@ -38,7 +38,7 @@ class Parameter:
     """
     _type_code: PacketFieldType
 
-    def __init__(self, format_code: int, init_value=None):
+    def __init__(self, format_code: int, init_value: Any = None):
         self._format_code = format_code
         if init_value is not None:
             self._validate(init_value)
@@ -56,7 +56,7 @@ class Parameter:
         return self._value
 
     @value.setter
-    def value(self, new_value):
+    def value(self, new_value: Any) -> None:
         if self._value == new_value:
             return
         self._validate(new_value)
@@ -95,7 +95,7 @@ class Parameter:
         """
         raise NotImplementedError
 
-    def subscribe(self, event_handler):
+    def subscribe(self, event_handler: Callable[..., Any]) -> None:
         """Subscribe to the parameter.
 
         Arguments:
@@ -103,7 +103,7 @@ class Parameter:
         """
         self._events.append(event_handler)
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         raise NotImplementedError
 
 
@@ -112,29 +112,29 @@ class BoolParameter(Parameter):
     _fmt = '>?'
     _struct = struct.Struct(_fmt)
 
-    def __init__(self, init_value=False):
+    def __init__(self, init_value: bool = False):
         super().__init__(format_code=8, init_value=init_value)
 
     def __len__(self):
         return 1
 
     @property
-    def format(self):
+    def format(self) -> str:
         return self._fmt
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, bool):
             raise TypeError("Boolean expected")
 
     @classmethod
-    def from_bytes(cls, buffer):
-        return cls._struct.unpack(buffer)[0]
+    def from_bytes(cls, buffer: bytes | bytearray) -> bool:
+        return bool(cls._struct.unpack(buffer)[0])
 
 
 class EnumParameter(Parameter):
     _type_code = PacketFieldType.ENUMERATED
 
-    def __init__(self, init_value=0, bitsize=8):
+    def __init__(self, init_value: int = 0, bitsize: int = 8):
         if not 1 <= bitsize <= 64:
             raise ValueError(f"bitsize must be between 1 and 64, got {bitsize}")
         value_size = bitsize // 8 + (1 if bitsize % 8 != 0 else 0)
@@ -142,17 +142,17 @@ class EnumParameter(Parameter):
         super().__init__(format_code=bitsize, init_value=init_value)
 
     @property
-    def format(self):
+    def format(self) -> str:
         return self._fmt
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** self._format_code - 1):
             raise ValueError(f"Value must be between 0 and {2 ** self._format_code - 1}")
 
     @classmethod
-    def from_bytes(cls, buffer, bitsize):
+    def from_bytes(cls, buffer: bytes | bytearray, bitsize: int) -> int:
         value_size = bitsize // 8 + (1 if bitsize % 8 != 0 else 0)
         return int.from_bytes(buffer[:value_size], byteorder='big')
 
@@ -168,21 +168,21 @@ class NumericParameter(Parameter):
     def format(self):
         return self._fmt
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         raise NotImplementedError
 
 
 class _IntegerParameter(NumericParameter):
     _signed: bool
 
-    def __bytes__(self):
-        return self.value.to_bytes(self._value_size, byteorder='big', signed=self._signed)
+    def __bytes__(self) -> bytes:
+        return int(self.value).to_bytes(self._value_size, byteorder='big', signed=self._signed)
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> int:
         return int.from_bytes(buffer[:cls._value_size], byteorder='big', signed=cls._signed)
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         raise NotImplementedError
 
 
@@ -190,7 +190,7 @@ class _UnsignedIntegerParameter(_IntegerParameter):
     _type_code = PacketFieldType.UINT
     _signed = False
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not 0 <= value <= (2 ** (self._value_size * 8) - 1):
@@ -201,7 +201,7 @@ class UInt8Parameter(_UnsignedIntegerParameter):
     _value_size = 1
     _fmt = 'B'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=4, init_value=init_value)
 
 
@@ -209,7 +209,7 @@ class UInt16Parameter(_UnsignedIntegerParameter):
     _value_size = 2
     _fmt = '>H'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=12, init_value=init_value)
 
 
@@ -217,7 +217,7 @@ class UInt32Parameter(_UnsignedIntegerParameter):
     _value_size = 4
     _fmt = '>I'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=14, init_value=init_value)
 
 
@@ -225,7 +225,7 @@ class UInt64Parameter(_UnsignedIntegerParameter):
     _value_size = 8
     _fmt = '>Q'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=16, init_value=init_value)
 
 
@@ -233,7 +233,7 @@ class _SignedIntegerParameter(_IntegerParameter):
     _type_code = PacketFieldType.INT
     _signed = True
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("Integer expected")
         if not (-2 ** (len(self) * 8 - 1)) <= value <= (2 ** (self._value_size * 8 - 1) - 1):
@@ -244,7 +244,7 @@ class Int8Parameter(_SignedIntegerParameter):
     _value_size = 1
     _fmt = 'b'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=4, init_value=init_value)
 
 
@@ -252,7 +252,7 @@ class Int16Parameter(_SignedIntegerParameter):
     _value_size = 2
     _fmt = '>h'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=12, init_value=init_value)
 
 
@@ -260,7 +260,7 @@ class Int32Parameter(_SignedIntegerParameter):
     _value_size = 4
     _fmt = '>i'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=14, init_value=init_value)
 
 
@@ -268,7 +268,7 @@ class Int64Parameter(_SignedIntegerParameter):
     _value_size = 8
     _fmt = '>q'
 
-    def __init__(self, init_value=0):
+    def __init__(self, init_value: int = 0):
         super().__init__(format_code=16, init_value=init_value)
 
 
@@ -277,7 +277,7 @@ class _RealParameter(NumericParameter):
     _struct: struct.Struct
 
     @Parameter.value.setter  # type: ignore[attr-defined]
-    def value(self, new_value):
+    def value(self, new_value: float) -> None:
         if self._value is not None and math.isclose(self._value, new_value):
             return
         self._validate(new_value)
@@ -287,13 +287,13 @@ class _RealParameter(NumericParameter):
             for event in self._events:
                 event(old_value=old_value, new_value=self._value)
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, float):
             raise TypeError("Float expected")
 
     @classmethod
-    def from_bytes(cls, buffer):
-        return cls._struct.unpack(buffer)[0]
+    def from_bytes(cls, buffer: bytes | bytearray) -> float:
+        return float(cls._struct.unpack(buffer)[0])
 
 
 class Real32Parameter(_RealParameter):
@@ -301,7 +301,7 @@ class Real32Parameter(_RealParameter):
     _fmt = '>f'
     _struct = struct.Struct(_fmt)
 
-    def __init__(self, init_value=0.0):
+    def __init__(self, init_value: float = 0.0):
         super().__init__(format_code=1, init_value=init_value)
 
 
@@ -310,19 +310,19 @@ class Real64Parameter(_RealParameter):
     _fmt = '>d'
     _struct = struct.Struct(_fmt)
 
-    def __init__(self, init_value=0.0):
+    def __init__(self, init_value: float = 0.0):
         super().__init__(format_code=2, init_value=init_value)
 
 
 class ArrayParameter(Parameter):
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         raise NotImplementedError
 
 
 class OctetStringParameter(ArrayParameter):
     _type_code = PacketFieldType.OCTET_STRING
 
-    def __init__(self, init_value=None):
+    def __init__(self, init_value: bytes | bytearray | None = None):
         super().__init__(format_code=0, init_value=init_value)
 
     def __len__(self):
@@ -332,29 +332,29 @@ class OctetStringParameter(ArrayParameter):
     def format(self, length_type):  # pylint: disable=arguments-differ
         return f"{length_type.format + len(self.value)}s"
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, (bytes, bytearray)):
             raise TypeError("Bytes or bytearray expected")
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> NoReturn:
         raise NotImplementedError
 
 
 class TimeParameter(Parameter):
-    def __init__(self, init_value=None):
+    def __init__(self, init_value: CucTime | None = None):
         super().__init__(format_code=0, init_value=init_value)
 
     @property
-    def format(self):
+    def format(self) -> str:
         return f"{len(self.value)}s"
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, CucTime):
             raise TypeError("CucTime expected")
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> NoReturn:
         raise NotImplementedError
 
 
@@ -362,7 +362,7 @@ class AbsoluteTimeParameter(TimeParameter):
     _type_code = PacketFieldType.ABSOLUTE_TIME
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> NoReturn:
         raise NotImplementedError
 
 
@@ -370,21 +370,21 @@ class RelativeTimeParameter(TimeParameter):
     _type_code = PacketFieldType.RELATIVE_TIME
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> NoReturn:
         raise NotImplementedError
 
 
 class PacketParameter(Parameter):
     _type_code = PacketFieldType.PACKET
 
-    def _validate(self, value):
+    def _validate(self, value: Any) -> None:
         if not isinstance(value, PusTcPacket):
             raise TypeError("PusTcPacket expected")
 
     @property
-    def format(self):
+    def format(self) -> str:
         return f"{len(self.value)}s"
 
     @classmethod
-    def from_bytes(cls, buffer):
+    def from_bytes(cls, buffer: bytes | bytearray) -> NoReturn:
         raise NotImplementedError

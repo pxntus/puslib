@@ -10,7 +10,7 @@ Implementations of the following packet formats:
 import struct
 from enum import IntEnum, IntFlag
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, cast
 from puslib.crc_ccitt import calculate as crc_ccitt_calculate
 from puslib.exceptions import CrcException, IncompletePacketException, InvalidPacketException
 from puslib.time import CucTime
@@ -25,7 +25,7 @@ _COMMON_SEC_HDR_STRUCT = struct.Struct('>BBB')
 _PEC_FIELD_SIZE = 2
 
 
-def _validate_int_field(field_name: str, val: int, min_val: int, max_val: int):
+def _validate_int_field(field_name: str, val: int, min_val: int, max_val: int) -> None:
     if isinstance(val, int) and not isinstance(val, bool):
         if not min_val <= val <= max_val:
             raise InvalidPacketException(f"{field_name} must be between {min_val} and {max_val}")
@@ -33,7 +33,7 @@ def _validate_int_field(field_name: str, val: int, min_val: int, max_val: int):
         raise TypeError(f"{field_name} must be an integer")
 
 
-def _validate_bool_field(field_name: str, val: bool):
+def _validate_bool_field(field_name: str, val: bool) -> None:
     if not isinstance(val, bool):
         raise TypeError(f"{field_name} must be a bool")
 
@@ -129,7 +129,7 @@ class CcsdsSpacePacket:
         return struct.pack('>HH', packet_id, seq_ctrl)
 
     @classmethod
-    def _parse_primary_header(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True) -> tuple[int, PacketType, bool, int, SequenceFlag, int, int]:
+    def _parse_primary_header(cls, buffer: bytes | bytearray | memoryview, has_pec: bool = True, validate_pec: bool = True) -> tuple[int, PacketType, bool, int, SequenceFlag, int, int]:
         """Parse and validate the CCSDS primary header from a buffer.
 
         Arguments:
@@ -313,7 +313,7 @@ class PusTcPacket(CcsdsSpacePacket):
     def app_data(self) -> bytes | None:
         return self.payload
 
-    def serialize(self):
+    def serialize(self) -> bytes:
         ccsds_header = super().serialize()
 
         if self.header.secondary_header_flag:
@@ -342,7 +342,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True, has_source_field: bool = True, validate_fields: bool = True):
+    def deserialize(cls, buffer: bytes | bytearray | memoryview, has_pec: bool = True, validate_pec: bool = True, has_source_field: bool = True, validate_fields: bool = True) -> "PusTcPacket":
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
@@ -423,7 +423,7 @@ class PusTcPacket(CcsdsSpacePacket):
         return packet
 
     @classmethod
-    def create(cls, **kwargs):
+    def create(cls, **kwargs) -> "PusTcPacket":
         """A factory method to create a PUS TC packet instance.
 
         Keyword Arguments:
@@ -477,7 +477,7 @@ class PusTcPacket(CcsdsSpacePacket):
                 _validate_int_field('Source ID', source, 0, 0xffff)
                 packet.secondary_header.source = source
 
-        return packet
+        return cast("PusTcPacket", packet)
 
 
 @dataclass(slots=True)
@@ -550,7 +550,7 @@ class PusTmPacket(CcsdsSpacePacket):
     def source_data(self) -> bytes | None:
         return self.payload
 
-    def serialize(self):
+    def serialize(self) -> bytes:
         ccsds_header = super().serialize()
 
         # First static part of secondary header
@@ -579,7 +579,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return packet_without_pec + pec
 
     @classmethod
-    def deserialize(cls, buffer: bytes | bytearray, has_pec: bool = True, validate_pec: bool = True, cuc_time: CucTime | None = None, has_type_counter_field: bool = True, has_destination_field: bool = True, validate_fields: bool = True):
+    def deserialize(cls, buffer: bytes | bytearray | memoryview, has_pec: bool = True, validate_pec: bool = True, cuc_time: CucTime | None = None, has_type_counter_field: bool = True, has_destination_field: bool = True, validate_fields: bool = True) -> "PusTmPacket":
         """Deserialize a packet from its binary format to a packet object.
 
         Arguments:
@@ -687,7 +687,7 @@ class PusTmPacket(CcsdsSpacePacket):
         return packet
 
     @classmethod
-    def create(cls, **kwargs):
+    def create(cls, **kwargs) -> "PusTmPacket":
         """A factory method to create a PUS TM packet instance.
 
         Keyword Arguments:
@@ -751,4 +751,4 @@ class PusTmPacket(CcsdsSpacePacket):
             if time:
                 packet.secondary_header.time = time
 
-        return packet
+        return cast("PusTmPacket", packet)

@@ -160,7 +160,7 @@ class CucTime:
             self._seconds = round(seconds_since_epoch)
         return seconds_since_epoch
 
-    def from_bytes(self, buffer: bytes | bytearray):
+    def from_bytes(self, buffer: bytes | bytearray | memoryview) -> None:
         """Set CUC time from a byte array.
 
         Arguments:
@@ -178,7 +178,7 @@ class CucTime:
         self._fraction = int.from_bytes(buffer[fraction_offset:fraction_offset + self._format.frac_unit_length], byteorder='big')
 
     @classmethod
-    def deserialize(cls, buffer: bytes | bytearray, has_preamble: bool = True, epoch: datetime | None = None, basic_unit_length: int | None = None, frac_unit_length: int | None = None) -> "CucTime":
+    def deserialize(cls, buffer: bytes | bytearray | memoryview, has_preamble: bool = True, epoch: datetime | None = None, basic_unit_length: int | None = None, frac_unit_length: int | None = None) -> "CucTime":
         """Deserialize a binary coded CUC time to a CUC time object.
 
         Arguments:
@@ -228,7 +228,7 @@ class CucTime:
             preamble=preamble)
 
     @classmethod
-    def create(cls, seconds=None, fraction=None, basic_unit_length=4, frac_unit_length=2, has_preamble=True, epoch=None, preamble=None) -> "CucTime":
+    def create(cls, seconds: int | None = None, fraction: int | None = None, basic_unit_length: int = 4, frac_unit_length: int = 2, has_preamble: bool = True, epoch: datetime | None = None, preamble: bytes | None = None) -> "CucTime":
         """A factory method to create a CUC time instance.
 
         Keyword Arguments:

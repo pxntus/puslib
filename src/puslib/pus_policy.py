@@ -52,7 +52,7 @@ class PusPolicy:
         self.event_reporting = self.EventReporting
         self.function_management = self.FunctionManagement
 
-    def CucTime(self, *args, **kwargs):  # pylint: disable=invalid-name
+    def CucTime(self, *args, **kwargs) -> "CucTime":  # pylint: disable=invalid-name
         func = partial(
             CucTime.create,
             basic_unit_length=self.common.tm.time.basic_unit_length,
@@ -60,7 +60,7 @@ class PusPolicy:
             has_preamble=self.common.tm.time.has_preamble)
         return func(*args, **kwargs)
 
-    def PusTcPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
+    def PusTcPacket(self, *args, **kwargs) -> "PusTcPacket":  # pylint: disable=invalid-name
         func = partial(
             PusTcPacket.create,
             pus_version=self.common.pus_version,
@@ -68,7 +68,7 @@ class PusPolicy:
             source=self.common.tc.source_id_type)
         return func(*args, **kwargs)
 
-    def PusTmPacket(self, *args, **kwargs):  # pylint: disable=invalid-name
+    def PusTmPacket(self, *args, **kwargs) -> "PusTmPacket":  # pylint: disable=invalid-name
         func = partial(
             PusTmPacket.create,
             pus_version=self.common.pus_version,

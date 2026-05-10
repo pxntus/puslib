@@ -11,7 +11,7 @@ from puslib.parameter import Parameter
 from puslib.packet import PusTcPacket
 
 
-def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action, actionargs=(), _next: float | None = None):
+def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action: Callable[..., Any], actionargs: tuple[Any, ...] = (), _next: float | None = None) -> None:
     now = scheduler.timefunc()
     next_time = (now + interval) if _next is None else (_next + interval)
     scheduler.enterabs(next_time, priority, periodic, (scheduler, interval, priority, action, actionargs, next_time))
@@ -102,7 +102,7 @@ class Process:
         self._pus_services[tc_packet.service].enqueue(tc_packet)
         self._pus_services[tc_packet.service].process()
 
-    def action(self, interval: int | float, priority=Priority.NORMAL):
+    def action(self, interval: int | float, priority: Priority = Priority.NORMAL) -> Callable[..., Any]:
         """Add an action to be executed with some interval.
 
         Arguments:
