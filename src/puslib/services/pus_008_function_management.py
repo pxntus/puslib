@@ -1,6 +1,6 @@
 import struct
 from collections.abc import Callable
-from typing import Sequence, NamedTuple, Type
+from typing import Any, Sequence, NamedTuple, Type, cast
 
 from puslib import get_policy
 from puslib.ident import PusIdent
@@ -29,7 +29,7 @@ class FunctionManagement(PusService):
         super()._register_sub_service(1, self._perform)
         self._functions: dict[int, _FuncDef] = {}
 
-    def _perform(self, app_data: bytes | bytearray):
+    def _perform(self, app_data: bytes | bytearray) -> bool | CommonErrorCode:
         """Handle function request.
 
         Arguments:
@@ -60,7 +60,7 @@ class FunctionManagement(PusService):
         if offset != len(app_data):
             return CommonErrorCode.PUS8_INVALID_ARGS
 
-        return func_def.callback(*args)
+        return cast("bool | CommonErrorCode", func_def.callback(*args))
 
     def add(self, func: Callable, fid: int, args: Sequence[Type[Parameter]]):
         """Add function handler.

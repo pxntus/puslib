@@ -33,10 +33,10 @@ class RequestVerification(PusService):
         super().__init__(PusServiceType.REQUEST_VERIFICATION, ident=ident, tm_output_stream=tm_output_stream)
         self._tm_output_stream: OutputStream
 
-    def enqueue(self, tc_packet):
+    def enqueue(self, tc_packet: PusTcPacket) -> None:
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
-    def process(self):
+    def process(self) -> None:
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
     def accept(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
@@ -119,7 +119,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: bytes | bytearray | None):
+    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: bytes | bytearray | None) -> None:
         payload = packet.request_id()
         if not success:
             if not failure_code:

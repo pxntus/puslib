@@ -27,7 +27,7 @@ class ParameterManagement(PusService):
         super()._register_sub_service(3, self._set_parameter_values)
         self._params = params
 
-    def _report_parameter_values(self, app_data: bytes | bytearray):
+    def _report_parameter_values(self, app_data: bytes | bytearray) -> bool:
         """Handle report parameter values request.
 
         Arguments:
@@ -64,7 +64,7 @@ class ParameterManagement(PusService):
         self._tm_output_stream.write(packet)
         return True
 
-    def _set_parameter_values(self, app_data: bytes | bytearray):
+    def _set_parameter_values(self, app_data: bytes | bytearray) -> bool:
         """Handle set parameter values request.
 
         Arguments:

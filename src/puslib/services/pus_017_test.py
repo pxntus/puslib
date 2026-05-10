@@ -20,7 +20,7 @@ class Test(PusService):
         self._tm_output_stream: OutputStream
         super()._register_sub_service(1, self._connection_test)
 
-    def _connection_test(self, app_data: bytes | bytearray):  # pylint: disable=unused-argument
+    def _connection_test(self, app_data: bytes | bytearray) -> bool:  # pylint: disable=unused-argument
         """Response to a connection test request.
 
         Arguments:

@@ -1,10 +1,13 @@
 import queue
 from enum import Enum
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from puslib.ident import PusIdent
 from puslib.packet import PusTcPacket
 from puslib.streams.stream import OutputStream
+
+if TYPE_CHECKING:
+    from puslib.services.pus_001_request_verification import RequestVerification
 
 
 class PusServiceType(bytes, Enum):
@@ -43,7 +46,7 @@ class PusServiceType(bytes, Enum):
 
 class PusService:
     """Base class for PUS services."""
-    def __init__(self, service_type: PusServiceType, ident: PusIdent, pus_service_1=None, tm_output_stream: OutputStream | None = None):
+    def __init__(self, service_type: PusServiceType, ident: PusIdent, pus_service_1: "RequestVerification | None" = None, tm_output_stream: OutputStream | None = None):
         self._service_type = service_type
         self._subservices: dict[int, Callable[..., Any]] = {}
         self._ident = ident
@@ -94,8 +97,8 @@ class PusService:
             self._pus_service_1.accept(tc_packet, success=success, failure_code=pus_error_code)
             self._pus_service_1.complete(tc_packet, success=success, failure_code=pus_error_code)
 
-    def update(self):
+    def update(self) -> None:
         pass
 
-    def _register_sub_service(self, number, func):
+    def _register_sub_service(self, number: int, func: Callable[..., Any]) -> None:
         self._subservices[number] = func

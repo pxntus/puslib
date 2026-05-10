@@ -1,7 +1,7 @@
 import struct
 from functools import partial
 from enum import IntEnum
-from typing import Type
+from typing import Any, Type
 
 from puslib.ident import PusIdent
 from puslib.parameter import Parameter
@@ -40,7 +40,7 @@ class Report(ParamReport):
         self._severity = severity
 
     @property
-    def severity(self):
+    def severity(self) -> Severity:
         return self._severity
 
 
@@ -63,7 +63,7 @@ class EventReporting(PusService):
         self._register_sub_service(7, self._report_disabled_events)
         self._reports: dict[int, Report] = {}
 
-    def add(self, eid, severity=Severity.INFO, params_in_report=None, enabled=True, trig_param=None, to_value=None, from_value=None):
+    def add(self, eid: int, severity: Severity = Severity.INFO, params_in_report: dict[int, Type[Parameter]] | None = None, enabled: bool = True, trig_param: Parameter | None = None, to_value: Any = None, from_value: Any = None) -> Report:
         """Add an event.
 
         Trigger conditions:
@@ -97,7 +97,7 @@ class EventReporting(PusService):
             trig_param.subscribe(partial(self._trigger, report, to_value, from_value))
         return report
 
-    def dispatch(self, eid_or_report: int | Report):
+    def dispatch(self, eid_or_report: int | Report) -> None:
         """Manually dispatch an event report.
 
         Arguments:
@@ -129,7 +129,7 @@ class EventReporting(PusService):
         )
         self._tm_output_stream.write(packet)
 
-    def _trigger(self, report: Report, to_value=None, from_value=None, old_value=None, new_value=None):
+    def _trigger(self, report: Report, to_value: Any = None, from_value: Any = None, old_value: Any = None, new_value: Any = None) -> None:
         if not report.enabled:
             return
         if not to_value and not from_value:  # if trig parameter has changed
@@ -141,7 +141,7 @@ class EventReporting(PusService):
             if from_value == old_value and to_value == new_value:
                 self.dispatch(report)
 
-    def _toggle(self, app_data: bytes | bytearray, enable: bool = True):
+    def _toggle(self, app_data: bytes | bytearray, enable: bool = True) -> bool:
         try:
             num_ids = get_policy().event_reporting.count_type(
                 get_policy().event_reporting.count_type.from_bytes(app_data)
@@ -160,7 +160,7 @@ class EventReporting(PusService):
                     self._reports[eid].disable()
         return True
 
-    def _report_disabled_events(self, app_data: bytes | bytearray):
+    def _report_disabled_events(self, app_data: bytes | bytearray) -> bool:
         if len(app_data) != 0:
             return False
         time = get_policy().CucTime()

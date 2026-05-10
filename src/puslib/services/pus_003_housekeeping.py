@@ -2,9 +2,10 @@ import struct
 import time
 from functools import partial
 from collections import OrderedDict
-from typing import Type, Sequence, Callable
+from typing import Any, Callable, Sequence, Type
 
 from puslib.ident import PusIdent
+from puslib.packet import PusTmPacket
 from puslib.parameter import Parameter
 from puslib.streams.stream import OutputStream
 from puslib.services import RequestVerification
@@ -35,11 +36,11 @@ class Report(ParamReport):
         self._last_sent: float = float('-inf')
 
     @property
-    def collection_interval(self):
+    def collection_interval(self) -> int:
         return self._collection_interval
 
     @collection_interval.setter
-    def collection_interval(self, new_value):
+    def collection_interval(self, new_value: int) -> None:
         self._collection_interval = new_value
 
     def is_due(self, now: float) -> bool:
@@ -85,7 +86,7 @@ class Housekeeping(PusService):
         self._register_sub_service(33, partial(self._request_interval_properties, diagnostic=False))
         self._register_sub_service(34, partial(self._request_interval_properties, diagnostic=True))
 
-    def add(self, sid: int, collection_interval: int, params_in_report: dict[int, Type[Parameter]] | None = None, enabled: bool = True, diagnostic: bool = False):
+    def add(self, sid: int, collection_interval: int, params_in_report: dict[int, Type[Parameter]] | None = None, enabled: bool = True, diagnostic: bool = False) -> Report:
         """Add a report.
 
         Arguments:
@@ -123,7 +124,7 @@ class Housekeeping(PusService):
                     report.mark_sent(now)
 
     @staticmethod
-    def create_parameter_report(apid: int, seq_count: int, report: Report, diagnostic: bool = False):
+    def create_parameter_report(apid: int, seq_count: int, report: Report, diagnostic: bool = False) -> PusTmPacket:
         app_data = bytes(report)
         packet = get_policy().PusTmPacket(
             apid=apid,
@@ -136,7 +137,7 @@ class Housekeeping(PusService):
         return packet
 
     @staticmethod
-    def create_structure_report(apid: int, seq_count: int, report: Report, diagnostic: bool = False):
+    def create_structure_report(apid: int, seq_count: int, report: Report, diagnostic: bool = False) -> PusTmPacket:
         app_data = bytes(get_policy().housekeeping.structure_id_type(report.id)) + \
             bytes(get_policy().housekeeping.collection_interval_type(report.collection_interval)) + \
             bytes(get_policy().housekeeping.count_type(len(report)))
@@ -154,7 +155,7 @@ class Housekeeping(PusService):
         return packet
 
     @staticmethod
-    def create_periodic_generation_properties_report(apid: int, seq_count: int, reports_to_report: Sequence[Report], diagnostic: bool = False):
+    def create_periodic_generation_properties_report(apid: int, seq_count: int, reports_to_report: Sequence[Report], diagnostic: bool = False) -> PusTmPacket:
         app_data = bytes(get_policy().housekeeping.count_type(len(reports_to_report)))
         for report in reports_to_report:
             app_data += bytes(get_policy().housekeeping.structure_id_type(report.id)) + \
@@ -170,7 +171,7 @@ class Housekeeping(PusService):
         )
         return packet
 
-    def _create_or_append_report(self, app_data: bytes | bytearray, append: bool = False, diagnostic: bool = False):
+    def _create_or_append_report(self, app_data: bytes | bytearray, append: bool = False, diagnostic: bool = False) -> bool | CommonErrorCode:
         if not self._params:
             return CommonErrorCode.PUS3_NO_PARAMS_AVAILABLE
 
@@ -224,7 +225,7 @@ class Housekeeping(PusService):
         except struct.error:
             return CommonErrorCode.INCOMPLETE
 
-    def _for_each_report_id(self, app_data: bytes | bytearray, diagnostic: bool, operation: Callable, *argv):
+    def _for_each_report_id(self, app_data: bytes | bytearray, diagnostic: bool, operation: Callable[..., Any], *argv: Any) -> bool | CommonErrorCode:
         """Help function to simplify handling of requests with N report IDs.
 
         The request, or command, should have the following structure:
@@ -255,14 +256,14 @@ class Housekeeping(PusService):
             return CommonErrorCode.INCOMPLETE
         return True
 
-    def _delete_reports(self, app_data: bytes | bytearray, diagnostic: bool = False):
+    def _delete_reports(self, app_data: bytes | bytearray, diagnostic: bool = False) -> bool | CommonErrorCode:
         def operation(report_id, reports):
             if not reports[report_id].enabled:
                 del reports[report_id]
 
         return self._for_each_report_id(app_data, diagnostic, operation)
 
-    def _toggle_reports(self, app_data: bytes | bytearray, diagnostic: bool = False, enable: bool = True):
+    def _toggle_reports(self, app_data: bytes | bytearray, diagnostic: bool = False, enable: bool = True) -> bool | CommonErrorCode:
         def operation(report_id, reports, enable):
             report = reports[report_id]
             if enable:
@@ -272,7 +273,7 @@ class Housekeeping(PusService):
 
         return self._for_each_report_id(app_data, diagnostic, operation, enable)
 
-    def _request_report_structures(self, app_data: bytes | bytearray, diagnostic: bool = False):
+    def _request_report_structures(self, app_data: bytes | bytearray, diagnostic: bool = False) -> bool | CommonErrorCode:
         def operation(report_id, reports):
             report = reports[report_id]
             packet = Housekeeping.create_structure_report(self._ident.apid, self._ident.next_seq_count(), report, diagnostic)
@@ -280,7 +281,7 @@ class Housekeeping(PusService):
 
         return self._for_each_report_id(app_data, diagnostic, operation)
 
-    def _request_reports(self, app_data: bytes | bytearray, diagnostic: bool = False):
+    def _request_reports(self, app_data: bytes | bytearray, diagnostic: bool = False) -> bool | CommonErrorCode:
         def operation(report_id, reports):
             report = reports[report_id]
             packet = Housekeeping.create_parameter_report(self._ident.apid, self._ident.next_seq_count(), report, diagnostic)
@@ -288,7 +289,7 @@ class Housekeeping(PusService):
 
         return self._for_each_report_id(app_data, diagnostic, operation)
 
-    def _modify_report_intervals(self, app_data: bytes | bytearray, diagnostic: bool = False):
+    def _modify_report_intervals(self, app_data: bytes | bytearray, diagnostic: bool = False) -> bool | CommonErrorCode:
         reports = self._diagnostic_reports if diagnostic else self._housekeeping_reports
         try:
             n = get_policy().housekeeping.count_type()
@@ -309,7 +310,7 @@ class Housekeeping(PusService):
         except struct.error:
             return CommonErrorCode.INCOMPLETE
 
-    def _request_interval_properties(self, app_data: bytes | bytearray, diagnostic: bool = False):
+    def _request_interval_properties(self, app_data: bytes | bytearray, diagnostic: bool = False) -> bool | CommonErrorCode:
         try:
             # parse number of parameters in the report definition
             num_reports = get_policy().housekeeping.count_type()
