@@ -1,13 +1,15 @@
+from collections.abc import Iterator
 from pathlib import Path
 
 from puslib import get_policy
+from puslib.packet import PusTmPacket
 from puslib.streams.stream import InputStream
 
 
 class FileInput(InputStream):
     """Input stream that reads TM packets from a binary archive file."""
 
-    def __init__(self, archive_file, has_type_counter_field=True, has_destination_field=True, other_headers_size=0, validate_pec=True):
+    def __init__(self, archive_file: str | Path, has_type_counter_field: bool = True, has_destination_field: bool = True, other_headers_size: int = 0, validate_pec: bool = True):
         """Create a file input stream.
 
         Arguments:
@@ -25,7 +27,7 @@ class FileInput(InputStream):
         self._other_headers_size = other_headers_size
         self._validate_pec = validate_pec
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[memoryview, PusTmPacket]]:
         """Iterate over all packets in the archive, yielding (other_headers, packet) tuples."""
         with open(self._input, 'rb') as f:
             content = f.read()
@@ -38,7 +40,7 @@ class FileInput(InputStream):
             offset += len(packet)
             yield other_headers, packet
 
-    def read(self, offset=0):
+    def read(self, offset: int = 0) -> PusTmPacket:
         """Read a single packet at a given byte offset within the archive.
 
         Keyword Arguments:

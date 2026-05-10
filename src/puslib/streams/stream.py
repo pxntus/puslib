@@ -1,4 +1,5 @@
 import abc
+from typing import Any
 
 
 class InputStream(metaclass=abc.ABCMeta):
@@ -9,7 +10,7 @@ class InputStream(metaclass=abc.ABCMeta):
         return hasattr(subclass, 'read') and callable(subclass.read) or NotImplemented
 
     @abc.abstractmethod
-    def read(self):
+    def read(self) -> Any:
         """Read and return a single TM packet."""
         raise NotImplementedError
 

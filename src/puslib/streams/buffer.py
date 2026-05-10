@@ -11,11 +11,11 @@ class QueuedOutput(OutputStream):
         self._queue: SimpleQueue[Any] = SimpleQueue()
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Number of packets currently in the queue."""
         return self._queue.qsize()
 
-    def write(self, packet):
+    def write(self, packet: Any) -> None:
         """Enqueue a packet.
 
         Arguments:
@@ -23,11 +23,11 @@ class QueuedOutput(OutputStream):
         """
         self._queue.put(packet)
 
-    def empty(self):
+    def empty(self) -> bool:
         """Return True if the queue contains no packets."""
         return self._queue.empty()
 
-    def get(self):
+    def get(self) -> Any | None:
         """Remove and return the next packet, or None if the queue is empty."""
         if self.empty():
             return None
