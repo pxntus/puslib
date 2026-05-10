@@ -1,15 +1,15 @@
 # Puslib
 
-**Puslib** is a Python implementation of the telemetry and telecommand packet utilization standard (PUS). It is a standard widely used in the space industry for the purposes of remote monitoring and control of spacecraft subsystems and payloads.
+**Puslib** is a Python library for working with the ECSS Packet Utilization Standard (PUS), a protocol widely used in the space industry.
 
-This package is mainly intended for ground segment tools, e.g.:
+PUS defines an application-level interface between ground and space, covering both segments. It specifies a binary packet format for telecommands and telemetry (based on CCSDS space packets) and a routing mechanism for those packets, as well as a software architecture built around application processes and a set of standard services.
 
-* data extraction and post-processing of telemetry.
-* simulators.
-* EGSE SW, and thus enabling the use of mission control systems for controlling and monitoring of EGSE equipment.
-* enable Python based commanding for mission control systems and other PUS based systems.
-* mission-specific tools.
-* student projects.
+Puslib covers two main use cases:
+
+* **TM/TC packet parsing** — deserialize raw packet streams, inspect packet fields, and extract parameter data for post-processing or analysis.
+* **PUS application stack** — implement a PUS-compliant backend that receives telecommands and emits telemetry, for use in EGSE equipment, simulators, or any system that communicates over TM/TC.
+
+The PUS stack is designed from the perspective of the system being monitored and controlled. It receives telecommands and produces telemetry, making it better suited for simulators and EGSE than for mission control systems. It targets ground tooling and test equipment rather than flight software, but don't let the sky be the limit.
 
 ## Install
 
