@@ -302,8 +302,8 @@ class Housekeeping(PusService):
                 collection_interval = get_policy().housekeeping.collection_interval_type()
                 collection_interval.value = collection_interval.from_bytes(app_data[offset:])
 
-                if sid in reports:
-                    reports[sid].collection_interval = collection_interval.value
+                if sid.value in reports:
+                    reports[sid.value].collection_interval = collection_interval.value
 
             return True
 
