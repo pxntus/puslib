@@ -2,7 +2,7 @@ from puslib.packet import PusTcPacket, PusTmPacket, AckFlag  # noqa: F401
 from puslib.time import CucTime  # noqa: F401
 from puslib.pus_policy import PusPolicy
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 _pus_policy = PusPolicy()
 
@@ -30,7 +30,7 @@ def set_policy(policy):
     _pus_policy = policy
 
 
-def get_policy():
+def get_policy() -> PusPolicy:
     """Get the current selected PUS policy.
 
     Returns:
