@@ -121,6 +121,8 @@ class PusService:
                 tc_packet = self._incoming_tc_queue.get_nowait()
             except queue.Empty:
                 break
+            if self._pus_service_1 is None:
+                raise RuntimeError(f"PUS service {self.service} has no request verification service")
             subservice_handler = self._subservices[tc_packet.subservice]
             ret = subservice_handler(app_data=tc_packet.app_data)
             if isinstance(ret, bool):

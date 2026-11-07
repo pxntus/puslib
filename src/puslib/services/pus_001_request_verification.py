@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import Enum, IntEnum
 
 from puslib import get_policy
 from puslib.packet import AckFlag
@@ -39,7 +39,7 @@ class RequestVerification(PusService):
     def process(self) -> None:
         raise RuntimeError("Request verification service (PUS 1) doesn't have a TC queue")
 
-    def accept(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
+    def accept(self, packet: PusTcPacket, success: bool = True, failure_code: Enum | None = None, failure_data: bytes | bytearray | None = None):
         """Generate acceptance verification report.
 
         Arguments:
@@ -59,7 +59,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def start(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
+    def start(self, packet: PusTcPacket, success: bool = True, failure_code: Enum | None = None, failure_data: bytes | bytearray | None = None):
         """Generate start of execution verification report.
 
         Arguments:
@@ -79,7 +79,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def progress(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
+    def progress(self, packet: PusTcPacket, success: bool = True, failure_code: Enum | None = None, failure_data: bytes | bytearray | None = None):
         """Generate progress of execution verification report.
 
         Arguments:
@@ -99,7 +99,7 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def complete(self, packet: PusTcPacket, success: bool = True, failure_code: CommonErrorCode | None = None, failure_data: bytes | bytearray | None = None):
+    def complete(self, packet: PusTcPacket, success: bool = True, failure_code: Enum | None = None, failure_data: bytes | bytearray | None = None):
         """Generate completion of execution verification report.
 
         Arguments:
@@ -119,10 +119,10 @@ class RequestVerification(PusService):
             failure_code,
             failure_data)
 
-    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: CommonErrorCode | None, failure_data: bytes | bytearray | None) -> None:
+    def _generate_report(self, packet: PusTcPacket, subservice: _SubService, success: bool, failure_code: Enum | None, failure_data: bytes | bytearray | None) -> None:
         payload = packet.request_id()
         if not success:
-            if not failure_code:
+            if failure_code is None:
                 failure_code = CommonErrorCode.ILLEGAL_APP_DATA
             payload += failure_code.value.to_bytes(len(get_policy().request_verification.failure_code_type()), byteorder='big') + (failure_data if failure_data else b'')
         time = get_policy().CucTime()
