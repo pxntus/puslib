@@ -142,6 +142,7 @@ class Process:
         def add_action(func):
             self._actions[func.__name__] = func
             periodic(self._scheduler, interval, priority, func)
+            return func
         return add_action
 
     def function(self, fid: int, args: Sequence[type[Parameter]]) -> Callable[..., Any]:
@@ -155,6 +156,7 @@ class Process:
             if PusServiceType.FUNCTION_MANAGEMENT.value not in self._pus_services:
                 raise RuntimeError("Process has no function management service")
             self._pus_service_8.add(func, fid, args)
+            return func
         return add_function
 
 
