@@ -1,10 +1,10 @@
-# This workflow will upload a Python Package using Twine when a release is created
-# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Publishes the package to PyPI when a GitHub release is published.
+# Uses PyPI Trusted Publishing (OIDC), so no API token is stored in the repo.
+# The PyPI trusted publisher must be configured with this workflow file name
+# (python-publish.yml) and the environment name "pypi".
+#
+# Actions are pinned to full commit SHAs (version in trailing comment), not tags.
+# Tags can be moved to other code, a commit SHA cannot.
 
 name: Upload Python Package
 
@@ -12,25 +12,51 @@ on:
   release:
     types: [published]
 
-jobs:
-  deploy:
+permissions:
+  contents: read
 
+jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+
+  build:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        persist-credentials: false
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
       with:
         python-version: '3.x'
-    - name: Install dependencies
+    - name: Install build tool
       run: |
         python -m pip install --upgrade pip
         pip install build
     - name: Build package
       run: python -m build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+    - name: Upload distributions
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        name: dist
+        path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/puslib
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+
+    steps:
+    - name: Download distributions
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        name: dist
+        path: dist/
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
