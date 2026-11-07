@@ -63,6 +63,7 @@ with open('telemetry.dump', 'rb') as f:
   * PUS 8: Function Management
   * PUS 17: Test (*partial support*)
   * PUS 20: On-board Parameter Management (*partial support*)
+  * Custom (mission-specific) services
 
 ## Links
 

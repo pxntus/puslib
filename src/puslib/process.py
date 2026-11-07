@@ -1,6 +1,6 @@
 import sched
 from enum import IntEnum
-from typing import Any, Sequence, Callable
+from typing import Any, Sequence, Callable, TypeVar
 
 from puslib import services
 from puslib.services.service import PusService, PusServiceType
@@ -9,6 +9,8 @@ from puslib.exceptions import TcPacketRoutingError
 from puslib.streams.stream import OutputStream
 from puslib.parameter import Parameter
 from puslib.packet import PusTcPacket
+
+ServiceT = TypeVar("ServiceT", bound=PusService)
 
 
 def periodic(scheduler: sched.scheduler, interval: int | float, priority: int, action: Callable[..., Any], actionargs: tuple[Any, ...] = (), _next: float | None = None) -> None:
@@ -88,6 +90,32 @@ class Process:
             param -- parameter
         """
         self._params[param_id] = param
+
+    def add_service(self, factory: Callable[[PusIdent, services.RequestVerification, OutputStream], ServiceT]) -> ServiceT:
+        """Add a user-implemented PUS service to the application process.
+
+        The factory is called with the process' PUS identifier, PUS service 1
+        instance and TM output stream. A PusService subclass whose constructor
+        takes these arguments can be passed directly as factory.
+
+        This can be used both for mission-specific services and for standard
+        services not implemented by puslib. A standard service should pass its
+        PusServiceType to the PusService constructor.
+
+        Arguments:
+            factory -- callable creating the service
+
+        Returns:
+            the created service
+
+        Raises:
+            ValueError: if the process already has a service with the same service type
+        """
+        service = factory(self._ident, self._pus_service_1, self._tm_output_stream)
+        if service.service in self._pus_services:
+            raise ValueError(f"PUS service {service.service} already exists in application process (APID {self.apid})")
+        self._pus_services[service.service] = service
+        return service
 
     def forward(self, tc_packet: PusTcPacket):
         """Forward TC packet to application service.

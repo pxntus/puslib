@@ -1,4 +1,5 @@
 import queue
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -44,10 +45,44 @@ class PusServiceType(bytes, Enum):
         return self.description
 
 
+_MAX_STANDARD_SERVICE = 127  # service types 0-127 are reserved for standard PUS services
+
+
 class PusService:
     """Base class for PUS services."""
-    def __init__(self, service_type: PusServiceType, ident: PusIdent, pus_service_1: "RequestVerification | None" = None, tm_output_stream: OutputStream | None = None):
-        self._service_type = service_type
+    def __init__(self, service_type: PusServiceType | int, ident: PusIdent, pus_service_1: "RequestVerification | None" = None, tm_output_stream: OutputStream | None = None,
+                 *, name: str | None = None, description: str | None = None):
+        """Create a PUS service instance.
+
+        Arguments:
+            service_type -- standard service type, or service type (0-255) of a custom service
+            ident -- PUS identifier
+
+        Keyword Arguments:
+            pus_service_1 -- PUS service 1 instance (default: {None})
+            tm_output_stream -- output stream (default: {None})
+            name -- service name, overrides the name of a standard service type (default: {None})
+            description -- service description, overrides the description of a standard service type (default: {None})
+
+        Raises:
+            ValueError: if the service type is out of range
+        """
+        if isinstance(service_type, PusServiceType):  # standard service
+            self._service_type: PusServiceType | None = service_type
+            self._service_number = int(service_type.value)
+            self._name = name if name is not None else service_type.name
+            self._description = description if description is not None else service_type.description
+        else:  # custom service
+            if isinstance(service_type, bool) or not isinstance(service_type, int):
+                raise TypeError("Service type must be a PusServiceType or an int")
+            if not 0 <= service_type <= 255:
+                raise ValueError(f"Service type must be in range 0-255, got {service_type}")
+            if service_type <= _MAX_STANDARD_SERVICE:
+                warnings.warn(f"Service type {service_type} is in the range reserved for standard PUS services (0-{_MAX_STANDARD_SERVICE})", stacklevel=2)
+            self._service_type = None
+            self._service_number = service_type
+            self._name = name if name is not None else f"SERVICE_{service_type}"
+            self._description = description if description is not None else ""
         self._subservices: dict[int, Callable[..., Any]] = {}
         self._ident = ident
         self._incoming_tc_queue: queue.SimpleQueue[PusTcPacket] = queue.SimpleQueue()
@@ -56,15 +91,18 @@ class PusService:
 
     @property
     def service(self) -> int:
-        return int(self._service_type.value)
+        """PUS service type number."""
+        return self._service_number
 
     @property
     def name(self) -> str:
-        return self._service_type.name
+        """Service name."""
+        return self._name
 
     @property
     def description(self) -> str:
-        return self._service_type.description
+        """Service description."""
+        return self._description
 
     def enqueue(self, tc_packet: PusTcPacket):
         """Enqueue an incoming PUS TC packet.

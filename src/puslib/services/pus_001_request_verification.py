@@ -129,7 +129,7 @@ class RequestVerification(PusService):
         report = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.next_seq_count(),
-            service_type=self._service_type.value,
+            service_type=self.service,
             service_subtype=subservice,
             time=time,
             data=payload

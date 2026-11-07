@@ -56,7 +56,7 @@ class ParameterManagement(PusService):
         packet = get_policy().PusTmPacket(
             apid=self._ident.apid,
             seq_count=self._ident.next_seq_count(),
-            service_type=self._service_type.value,
+            service_type=self.service,
             service_subtype=2,
             time=time,
             data=source_data
